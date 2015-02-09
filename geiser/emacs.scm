@@ -1,3 +1,10 @@
+;; Copyright (C) 2015 Daniel J Leslie
+
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the Modified BSD License. You should
+;; have received a copy of the license along with this program. If
+;; not, see <http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5>.
+
 (module geiser
   ;; A bunch of these needn't be toplevel functions
   (geiser-eval
@@ -22,11 +29,11 @@
    make-geiser-toplevel-bindings)
 
   ;; Necessary built in units
-  (import chicken 
-          scheme 
-          extras 
-          data-structures 
-          ports 
+  (import chicken
+          scheme
+          extras
+          data-structures
+          ports
           csi
           irregex
           srfi-1
@@ -40,7 +47,7 @@
        srfi-18)
 
   (define use-debug-log #f)
-  
+
   (if use-debug-log
    (use posix))
 
@@ -78,12 +85,12 @@
            imag-part real-part magnitude numerator denominator
            scheme-report-environment null-environment interaction-environment
            else)))
-  
+
   (define geiser-r5rs-symbols
     (make-parameter
-     '(abs acos and angle append apply asin assoc assq assv atan begin 
-           boolean? caar cadr call-with-current-continuation 
-           call-with-input-file call-with-output-file call-with-values 
+     '(abs acos and angle append apply asin assoc assq assv atan begin
+           boolean? caar cadr call-with-current-continuation
+           call-with-input-file call-with-output-file call-with-values
            car case cdddar cddddr cdr ceiling char->integer char-alphabetic?
            char-ci<=? char-ci<? char-ci=? char-ci>=? char-ci>? char-downcase
            char-lower-case? char-numeric? char-ready? char-upcase
@@ -94,25 +101,25 @@
            equal? eqv? eval even? exact->inexact exact? exp expt floor
            for-each force gcd if imag-part inexact->exact inexact? input-port?
            integer->char integer? interaction-environment lambda lcm length
-           let let* let-syntax letrec letrec-syntax list list->string 
+           let let* let-syntax letrec letrec-syntax list list->string
            list->vector list-ref list-tail list? load log magnitude make-polar
-           make-rectangular make-string make-vector map max member memq memv 
-           min modulo negative? newline not null-environment null? 
-           number->string number? numerator odd? open-input-file 
-           open-output-file or output-port? pair? peek-char port? positive? 
-           procedure? quasiquote quote quotient rational? rationalize read 
-           read-char real-part real? remainder reverse round 
-           scheme-report-environment set! set-car! set-cdr! setcar sin sqrt 
-           string string->list string->number string->symbol string-append 
-           string-ci<=? string-ci<? string-ci=? string-ci>=? string-ci>? 
-           string-copy string-fill! string-length string-ref string-set! 
-           string<=? string<? string=? string>=? string>? string? substring 
-           symbol->string symbol? syntax-rules tan transcript-off transcript-on 
-           truncate values vector vector->list vector-fill! vector-length 
-           vector-ref vector-set! vector? with-input-from-file with-output-to-file 
+           make-rectangular make-string make-vector map max member memq memv
+           min modulo negative? newline not null-environment null?
+           number->string number? numerator odd? open-input-file
+           open-output-file or output-port? pair? peek-char port? positive?
+           procedure? quasiquote quote quotient rational? rationalize read
+           read-char real-part real? remainder reverse round
+           scheme-report-environment set! set-car! set-cdr! setcar sin sqrt
+           string string->list string->number string->symbol string-append
+           string-ci<=? string-ci<? string-ci=? string-ci>=? string-ci>?
+           string-copy string-fill! string-length string-ref string-set!
+           string<=? string<? string=? string>=? string>? string? substring
+           symbol->string symbol? syntax-rules tan transcript-off transcript-on
+           truncate values vector vector->list vector-fill! vector-length
+           vector-ref vector-set! vector? with-input-from-file with-output-to-file
            write write-char zero?)))
 
-  (define geiser-r7rs-small-symbols 
+  (define geiser-r7rs-small-symbols
     (make-parameter
      '(* + - ... / < <= = => > >= abs and append apply assoc assq
          assv begin binary-port? boolean=? boolean? bytevector
@@ -154,7 +161,7 @@
          vector->list vector-append vector-copy! vector-for-each vector-map
          vector-set! when write-bytevector write-string zero?)))
 
-  (define geiser-chicken-builtin-symbols 
+  (define geiser-chicken-builtin-symbols
     (make-parameter
      '(and-let* assume compiler-typecase cond-expand condition-case cut cute declare define-constant
                 define-inline define-interface define-record define-record-type define-specialization
@@ -177,7 +184,7 @@
 
   (define (write-to-log form) #f)
   (define debug-log (make-parameter #f))
-     
+
   (if use-debug-log
    (begin
      (define (write-to-log form)
@@ -211,7 +218,7 @@
   (define (with-all-output-to-string thunk)
     (with-output-to-string
       (lambda ()
-        (with-error-output-to-port 
+        (with-error-output-to-port
          (current-output-port)
          thunk))))
 
@@ -238,17 +245,17 @@
            (original-module (current-module)))
 
       (set! output
-            (handle-exceptions exn 
-             (with-all-output-to-string 
+            (handle-exceptions exn
+             (with-all-output-to-string
               (lambda () (write-exception exn)))
              (with-all-output-to-string
-              (lambda () 
+              (lambda ()
                 (switch-module module)
                 (call-with-values thunk (lambda v (set! result v)))))))
 
       (switch-module original-module)
 
-      (set! result (if (list? result) 
+      (set! result (if (list? result)
                        (map (lambda (v) (with-output-to-string (lambda () (write v)))) result)
                        (list (with-output-to-string (lambda () (write result))))))
 
@@ -264,7 +271,7 @@
 
   ;; This macro aids in the creation of toplevel definitions for the interpreter which are also available to code
   ;; toplevel passes parameters via the current-input-port, and so in order to make the definition behave nicely
-  ;; in both usage contexts I defined a (get-arg) function which iteratively pulls arguments either from the 
+  ;; in both usage contexts I defined a (get-arg) function which iteratively pulls arguments either from the
   ;; input port or from the variable arguments, depending on context.
   (define-syntax define-toplevel-for-geiser
     (lambda (f r c)
@@ -296,7 +303,7 @@
      (if (any (cut eq? <> sym) (geiser-chicken-builtin-symbols))
          '(chicken)
          '())))
-  
+
   ;; Locates any paths at which a particular symbol might be located
   (define (find-library-paths sym types)
     ;; Removes the given sym from the node path
@@ -317,13 +324,13 @@
       (find-standards-with-symbol sym))
      (map
       (lambda (node)
-        (remove-self sym (node-path node))) 
-      (filter 
-       (lambda (n) 
+        (remove-self sym (node-path node)))
+      (filter
+       (lambda (n)
          (let ((type (node-type n)))
            (any (cut eq? type <>) types)))
        (match-nodes sym)))))
-  
+
   ;; Builds a signature list from an identifier
   (define (find-signatures toplevel-module sym)
     (define str (symbol->string sym))
@@ -332,7 +339,7 @@
       (if (null? module-sym)
           (find-standards-with-symbol sym)
           (cons module-sym (find-standards-with-symbol sym))))
-    
+
     (define (fmt node)
       (let* ((entry-str (car node))
              (module (cadr node))
@@ -410,13 +417,13 @@
 
   ;; Builds the documentation from Chicken Doc for a specific ymbol
   (define (make-doc symbol #!optional (filter-for-type #f))
-    (with-output-to-string 
-      (lambda () 
+    (with-output-to-string
+      (lambda ()
         (map (lambda (node)
                (display (string-append "= Node: " (->string (node-id node)) " " " =\n"))
                (describe node)
-               (display "\n\n")) 
-             (filter 
+               (display "\n\n"))
+             (filter
               (lambda (n)
                 (or (not filter-for-type)
                     (eq? (node-type n) filter-for-type)))
@@ -476,7 +483,7 @@
 
   ;; Load a file
 
-  (define-toplevel-for-geiser geiser-load-file 
+  (define-toplevel-for-geiser geiser-load-file
     (let* ((file (get-arg))
            (file (if (symbol? file) (symbol->string file) file))
            (found-file (geiser-find-file #f file)))
@@ -486,7 +493,7 @@
            (load found-file))))))
 
   ;; The no-values identity
-  
+
   (define-toplevel-for-geiser geiser-no-values
     (values))
 
@@ -509,14 +516,14 @@
           (current-input-port in)
           (current-output-port out)
           (current-error-port out)
-          
+
           (repl)))
 
       (thread-start! (make-thread remote-repl))
 
       (write-to-log `(geiser-start-server . ,rest))
       (write-to-log `(port ,port))
-      
+
       (write `(port ,port))
       (newline)))
 
@@ -540,7 +547,7 @@
       (filter (lambda (v) (string-search match (symbol->string v)))
               (list-modules))))
 
-  (define (geiser-autodoc toplevel-module ids . rest) 
+  (define (geiser-autodoc toplevel-module ids . rest)
     (define (generate-details sym)
       (find-signatures toplevel-module sym))
 
@@ -549,18 +556,18 @@
                (map generate-details ids))
         '()))
 
-  (define (geiser-object-signature toplevel-module name object . rest) 
+  (define (geiser-object-signature toplevel-module name object . rest)
     (let* ((sig (geiser-autodoc toplevel-module `(,name))))
       (if (null? sig) '() (car sig))))
 
     ;; TODO: Divine some way to support this functionality
 
-  (define (geiser-symbol-location toplevel-module symbol . rest) 
+  (define (geiser-symbol-location toplevel-module symbol . rest)
     '(("file") ("line")))
 
   (define (geiser-symbol-documentation toplevel-module symbol . rest)
     (let* ((sig (find-signatures toplevel-module symbol)))
-      `(("signature" ,@(car sig)) 
+      `(("signature" ,@(car sig))
         ("docstring" . ,(make-doc symbol)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -579,11 +586,11 @@
          (else (try-find file (cdr paths)))))
       (try-find file paths)))
 
-  (define (geiser-add-to-load-path toplevel-module directory . rest) 
-    (let* ((directory (if (symbol? directory) 
+  (define (geiser-add-to-load-path toplevel-module directory . rest)
+    (let* ((directory (if (symbol? directory)
                           (symbol->string directory)
                           directory))
-           (directory (if (not (equal? #\/ (string-ref directory (- (string-length directory 1))))) 
+           (directory (if (not (equal? #\/ (string-ref directory (- (string-length directory 1)))))
                           (string-append directory "/")
                           directory)))
       (call-with-result #f
@@ -591,7 +598,7 @@
          (when (directory-exists? directory)
            (geiser-load-paths (cons directory (geiser-load-paths))))))))
 
-  (define (geiser-compile-file toplevel-module file . rest) 
+  (define (geiser-compile-file toplevel-module file . rest)
     (let* ((file (if (symbol? file) (symbol->string file) file))
            (found-file (geiser-find-file toplevel-module file)))
       (call-with-result #f
@@ -601,7 +608,7 @@
 
     ;; TODO: Support compiling regions
 
-  (define (geiser-compile toplevel-module form module . rest) 
+  (define (geiser-compile toplevel-module form module . rest)
     (error "Chicken does not support compiling regions"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -610,7 +617,7 @@
 
   ;; Should return:
   ;; '(("modules" . sub-modules) ("procs" . procedures) ("syntax" . macros) ("vars" . variables))
-  (define (geiser-module-exports toplevel-module module-name . rest) 
+  (define (geiser-module-exports toplevel-module module-name . rest)
     (let* ((nodes (match-nodes module-name)))
       (if (null? nodes)
           '()
@@ -640,13 +647,13 @@
 
   ;; Returns the path for the file in which an egg or module was defined
 
-  (define (geiser-module-path toplevel-module module-name . rest) 
+  (define (geiser-module-path toplevel-module module-name . rest)
     #f)
 
   ;; Returns:
   ;; `(("file" . ,(module-path name)) ("line"))
 
-  (define (geiser-module-location toplevel-module name . rest) 
+  (define (geiser-module-location toplevel-module name . rest)
     #f)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -658,7 +665,7 @@
       (lambda ()
         (pretty-print (expand form)))))
 
-;; End module    
+;; End module
   )
 
 (import geiser)
