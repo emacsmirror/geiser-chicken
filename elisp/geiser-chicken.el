@@ -1,6 +1,6 @@
 ;; geiser-chicken.el -- chicken's implementation of the geiser protocols
 
-;; Copyright (C) 2014 Daniel Leslie
+;; Copyright (C) 2014, 2015 Daniel Leslie
 
 ;; Based on geiser-guile.el by Jose Antonio Ortego Ruize
 
@@ -31,11 +31,11 @@
   '("and-let*" "assume" "compiler-typecase" "cond-expand" "condition-case"
     "cut" "cute" "declare" "define-constant" "define-inline" "define-interface"
     "define-record" "define-record-type" "define-specialization"
-    "define-syntax-rule" "define-type" "define-values" "dotimes" "ecase" 
-    "fluid-let" "foreign-lambda" "foreign-lambda*" "foreign-primitive" 
+    "define-syntax-rule" "define-type" "define-values" "dotimes" "ecase"
+    "fluid-let" "foreign-lambda" "foreign-lambda*" "foreign-primitive"
     "foreign-safe-lambda" "foreign-safe-lambda*" "functor" "handle-exceptions"
-    "import" "let*-values" "let-location" "let-optionals" "let-optionals*" 
-    "let-values" "letrec*" "letrec-values" "match-letrec" "module" 
+    "import" "let*-values" "let-location" "let-optionals" "let-optionals*"
+    "let-values" "letrec*" "letrec-values" "match-letrec" "module"
     "parameterize" "regex-case" "require-extension" "select" "set!"
     "unless" "use" "when" "with-input-from-pipe" "match" "match-lambda"
     "match-lambda*" "match-let" "match-let*" "receive"))
@@ -117,9 +117,9 @@ This function uses `geiser-chicken-init-file' if it exists."
               (format ",geiser-eval %s %s" (or (car args) "#f") form)))
            ((load-file compile-file)
             (format ",geiser-load-file %s" (car args)))
-           ((no-values) 
+           ((no-values)
             ",geiser-no-values")
-           (t 
+           (t
             (let ((form (mapconcat 'identity args " ")))
               (format "(geiser-%s %s)" proc form))))))
     ;;(message fmt)
@@ -249,7 +249,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 (defconst geiser-chicken-minimum-version "4.8.0.0")
 
 (defun geiser-chicken--version (binary)
-  (shell-command-to-string (format "%s -e \"(display (chicken-version))\"" 
+  (shell-command-to-string (format "%s -e \"(display (chicken-version))\""
                                    binary)))
 
 (defun connect-to-chicken ()
@@ -260,7 +260,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 (defun geiser-chicken--startup (remote)
   (compilation-setup t)
   (let ((geiser-log-verbose-p t))
-    (geiser-eval--send/wait (format "(load \"%s\")\n" 
+    (geiser-eval--send/wait (format "(load \"%s\")\n"
                                     (expand-file-name "chicken/geiser/emacs.scm" geiser-scheme-dir)))))
 
 ;;; Implementation definition:
