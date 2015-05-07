@@ -260,7 +260,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 (defun geiser-chicken--startup (remote)
   (compilation-setup t)
   (let ((geiser-log-verbose-p t))
-    (geiser-eval--send/wait (format "(load \"%s\")\n"
+    (geiser-eval--send/wait (format "(use utils)(compile-file \"%s\")\n"
                                     (expand-file-name "chicken/geiser/emacs.scm" geiser-scheme-dir)))))
 
 ;;; Implementation definition:
