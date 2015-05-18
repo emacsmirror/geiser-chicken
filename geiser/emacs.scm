@@ -231,11 +231,12 @@
   (define (describe-symbol sym #!key (exact? #f))
     (let* ((str (symbol->string sym))
            (found (apropos-information-list (regexp (make-apropos-regex str)) #:macros? #t)))
-      (if exact?
-          (filter (lambda (v)
-                    (equal? str (string-substitute ".*#([^#]+)" "\\1" (symbol->string (car v)))))
-                  found)
-          found)))
+      (delete-duplicates
+       (if exact?
+           (filter (lambda (v)
+                     (equal? str (string-substitute ".*#([^#]+)" "\\1" (symbol->string (car v)))))
+                   found)
+           found))))
 
   ;; Wraps output from geiser functions
   (define (call-with-result module thunk)
@@ -255,9 +256,14 @@
 
       (switch-module original-module)
 
-      (set! result (if (list? result)
-                       (map (lambda (v) (with-output-to-string (lambda () (write v)))) result)
-                       (list (with-output-to-string (lambda () (write result))))))
+      (set! result
+        (cond
+         ((list? result)
+          (map (lambda (v) (with-output-to-string (lambda () (write v)))) result))
+         ((eq? result (if #f #t))
+          (list output))
+         (else
+          (list (with-output-to-string (lambda () (write result)))))))
 
       (let ((out-form
              `((result ,@result)
@@ -415,7 +421,7 @@
 
     (map fmt (find sym)))
 
-  ;; Builds the documentation from Chicken Doc for a specific ymbol
+  ;; Builds the documentation from Chicken Doc for a specific symbol
   (define (make-doc symbol #!optional (filter-for-type #f))
     (with-output-to-string
       (lambda ()
@@ -590,7 +596,7 @@
     (let* ((directory (if (symbol? directory)
                           (symbol->string directory)
                           directory))
-           (directory (if (not (equal? #\/ (string-ref directory (- (string-length directory 1)))))
+           (directory (if (not (equal? #\/ (string-ref directory (- (string-length directory)))))
                           (string-append directory "/")
                           directory)))
       (call-with-result #f
