@@ -60,6 +60,11 @@ started."
   :type '(repeat file)
   :group 'geiser-chicken)
 
+(geiser-custom--defcustom geiser-chicken-compile-geiser-p t
+  "Non-nil means that the Geiser runtime will be compiled on load."
+  :type 'boolean
+  :group 'geiser-chicken)
+
 (geiser-custom--defcustom geiser-chicken-init-file "~/.chicken-geiser"
   "Initialization file with user code for the Chicken REPL.
 If all you want is to load ~/.csirc, set
@@ -259,9 +264,13 @@ This function uses `geiser-chicken-init-file' if it exists."
 
 (defun geiser-chicken--startup (remote)
   (compilation-setup t)
-  (let ((geiser-log-verbose-p t))
-    (geiser-eval--send/wait (format "(use utils)(compile-file \"%s\")\n"
-                                    (expand-file-name "chicken/geiser/emacs.scm" geiser-scheme-dir)))))
+  (let ((geiser-log-verbose-p t)
+        (geiser-chicken-load-file (expand-file-name "chicken/geiser/emacs.scm" geiser-scheme-dir)))
+    (if geiser-chicken-compile-geiser-p
+      (geiser-eval--send/wait (format "(use utils)(compile-file \"%s\")(import geiser)"
+                                      geiser-chicken-load-file))
+      (geiser-eval--send/wait (format "(load \"%s\")"
+                                      geiser-chicken-load-file)))))
 
 ;;; Implementation definition:
 
