@@ -244,6 +244,7 @@ This function uses `geiser-chicken-init-file' if it exists."
  (define-specialization 1)
  (define-type 1)
  (with-input-from-pipe 1)
+ (with-output-to-pipe 1)
  (select 1)
  (functor 3)
  (define-interface 1)
