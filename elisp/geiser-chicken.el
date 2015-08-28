@@ -268,7 +268,15 @@ This function uses `geiser-chicken-init-file' if it exists."
   (let ((geiser-log-verbose-p t)
         (geiser-chicken-load-file (expand-file-name "chicken/geiser/emacs.scm" geiser-scheme-dir)))
     (if geiser-chicken-compile-geiser-p
-      (geiser-eval--send/wait (format "(use utils)(compile-file \"%s\")(import geiser)"
+      (geiser-eval--send/wait (format "
+;; Sadly, (use import compile-file) must be run at top-level, so we have a stdout binding
+(define geiser-stdout (current-output-port))
+(current-output-port (make-output-port (lambda a #f) (lambda a #f)))
+(use utils)
+(compile-file \"%s\")
+(import geiser)
+(current-output-port geiser-stdout)
+"
                                       geiser-chicken-load-file))
       (geiser-eval--send/wait (format "(load \"%s\")"
                                       geiser-chicken-load-file)))))
