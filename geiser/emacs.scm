@@ -174,7 +174,44 @@
 
   (define geiser-chicken-crunch-symbols
     (make-parameter
-     '(cond-expand when unless switch rec not eq? eqv? equal? + - * / = > < >= <= abs acos asin atan ceiling cos display even? exact? exact->inexact exp expt floor inexact? inexact->exact integer? log max min modulo negative? odd? positive? quotient remainder round sin sqrt tan truncate zero? char=? char>? char<? char>=? char<=? char->integer char-alphabetic? char-ci=? char-ci>? char-ci<? char-ci>=? char-ci<=? char-downcase char-lower-case? char-numeric? char-upper-case? char-upcase char-whitespace? integer->char number->string make-string string=? string>? string<? string>=? string<=? string->number string-ci=? string-ci>? string-ci<? string-ci>=? string-ci<=? string-append string-copy string-fill! string-length string-ref string-set! substring display newline write-char add1 atan2 arithmetic-shift bitwise-and bitwise-ior bitwise-not bitwise-xor sub1 f32vector-length f32vector-ref f32vector-set! f64vector-length f64vector-ref f64vector-set! make-f32vector make-f64vector make-s16vector make-s32vector make-s8vector make-u16vector make-u32vector make-u8vector s16vector-length s16vector-ref s16vector-set! s32vector-length s32vector-ref s32vector-set! s8vector-length s8vector-ref s8vector-set! subf32vector subf64vector subs16vector subs32vector subs8vector subu16vector subu32vector subu8vector u16vector-length u16vector-ref u16vector-set! u32vector-length u32vector-ref u32vector-set! u8vector-length u8vector-ref u8vector-set! blob->f32vector blob->f32vector/shared blob->f64vector blob->f64vector/shared blob->s16vector blob->s16vector/shared blob->s32vector blob->s32vector/shared blob->s8vector blob->s8vector/shared blob->string blob->string/shared blob->u16vector blob->u16vector/shared blob->u32vector blob->u32vector/shared blob->u8vector blob->u8vector/shared f32vector->blob f32vector->blob/shared f64vector->blob f64vector->blob/shared s16vector->blob s16vector->blob/shared s32vector->blob s32vector->blob/shared s8vector->blob s8vector->blob/shared string->blob string->blob/shared u16vector->blob u16vector->blob/shared u32vector->blob u32vector->blob/shared u8vector->blob u8vector->blob/shared flush-output void error exit argc argv-ref pointer-u8-ref pointer-s8-ref pointer-u16-ref pointer-s16-ref pointer-u32-ref pointer-s32-ref pointer-f32-ref pointer-f64-ref pointer-u8-set! pointer-s8-set! pointer-u16-set! pointer-s16-set! pointer-u32-set! pointer-s32-set! pointer-f32-set! pointer-f64-set!)))
+     '(* + - / < <= = > >= abs acos add1 argc argv-ref arithmetic-shift asin
+	 atan atan2 bitwise-and bitwise-ior bitwise-not bitwise-xor
+	 blob->f32vector blob->f32vector/shared blob->f64vector
+	 blob->f64vector/shared blob->s16vector blob->s16vector/shared
+	 blob->s32vector blob->s32vector/shared blob->s8vector
+	 blob->s8vector/shared blob->string blob->string/shared blob->u16vector
+	 blob->u16vector/shared blob->u32vector blob->u32vector/shared
+	 blob->u8vector blob->u8vector/shared ceiling char->integer
+	 char-alphabetic? char-ci<=? char-ci<? char-ci=? char-ci>=? char-ci>?
+	 char-downcase char-lower-case? char-numeric? char-upcase
+	 char-upper-case? char-whitespace? char<=? char<? char=? char>=? char>?
+	 cond-expand cos display display eq? equal? eqv? error even?
+	 exact->inexact exact? exit exp expt f32vector->blob
+	 f32vector->blob/shared f32vector-length f32vector-ref f32vector-set!
+	 f64vector->blob f64vector->blob/shared f64vector-length f64vector-ref
+	 f64vector-set! floor flush-output inexact->exact inexact?
+	 integer->char integer? log make-f32vector make-f64vector make-s16vector
+	 make-s32vector make-s8vector make-string make-u16vector make-u32vector
+	 make-u8vector max min modulo negative? newline not number->string odd?
+	 pointer-f32-ref pointer-f32-set! pointer-f64-ref pointer-f64-set!
+	 pointer-s16-ref pointer-s16-set! pointer-s32-ref pointer-s32-set!
+	 pointer-s8-ref pointer-s8-set! pointer-u16-ref pointer-u16-set!
+	 pointer-u32-ref pointer-u32-set! pointer-u8-ref pointer-u8-set!
+	 positive? quotient rec remainder round s16vector->blob
+	 s16vector->blob/shared s16vector-length s16vector-ref s16vector-set!
+	 s32vector->blob s32vector->blob/shared s32vector-length s32vector-ref
+	 s32vector-set! s8vector->blob s8vector->blob/shared s8vector-length
+	 s8vector-ref s8vector-set! sin sqrt string->blob string->blob/shared
+	 string->number string-append string-ci<=? string-ci<? string-ci=?
+	 string-ci>=? string-ci>? string-copy string-fill! string-length
+	 string-ref string-set! string<=? string<? string=? string>=? string>?
+	 sub1 subf32vector subf64vector subs16vector subs32vector subs8vector
+	 substring subu16vector subu32vector subu8vector switch tan truncate
+	 u16vector->blob u16vector->blob/shared u16vector-length u16vector-ref
+	 u16vector-set! u32vector->blob u32vector->blob/shared u32vector-length
+	 u32vector-ref u32vector-set! u8vector->blob u8vector->blob/shared
+	 u8vector-length u8vector-ref u8vector-set! unless void when write-char
+	 zero?)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Utilities
