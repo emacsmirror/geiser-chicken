@@ -207,7 +207,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 ;;; Keywords and syntax
 
 (defun geiser-chicken--keywords ()
-  `((,(format "[[(]%s\\>" (regexp-opt geiser-chicken-builtin-keywords 1)) . 1)))
+  (geiser-syntax--simple-keywords geiser-chicken-builtin-keywords))
 
 (geiser-syntax--scheme-indent
  (receive 2)
