@@ -225,7 +225,9 @@ This function uses `geiser-chicken-init-file' if it exists."
 ;;; Keywords and syntax
 
 (defun geiser-chicken--keywords ()
-  (geiser-syntax--simple-keywords geiser-chicken-builtin-keywords))
+  (append
+   (geiser-syntax--simple-keywords geiser-chicken-extra-keywords)
+   (geiser-syntax--simple-keywords geiser-chicken-builtin-keywords)))
 
 (geiser-syntax--scheme-indent
  (receive 2)
