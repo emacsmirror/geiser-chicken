@@ -26,19 +26,37 @@
 
 (eval-when-compile (require 'cl))
 
-
 (defconst geiser-chicken-builtin-keywords
-  '("and-let*" "assume" "compiler-typecase" "cond-expand" "condition-case"
-    "cut" "cute" "declare" "define-constant" "define-inline" "define-interface"
-    "define-record" "define-record-type" "define-specialization"
-    "define-syntax-rule" "define-type" "define-values" "dotimes" "ecase"
-    "fluid-let" "foreign-lambda" "foreign-lambda*" "foreign-primitive"
-    "foreign-safe-lambda" "foreign-safe-lambda*" "functor" "handle-exceptions"
-    "import" "let*-values" "let-location" "let-optionals" "let-optionals*"
-    "let-values" "letrec*" "letrec-values" "match-letrec" "module"
-    "parameterize" "regex-case" "require-extension" "select" "set!"
-    "unless" "use" "when" "with-input-from-pipe" "match" "match-lambda"
-    "match-lambda*" "match-let" "match-let*" "receive"))
+  '("assume"
+    "compiler-typecase"
+    "cond-expand"
+    "condition-case"
+    "declare"
+    "define-constant"
+    "define-inline"
+    "define-interface"
+    "define-record"
+    "define-specialization"
+    "define-type"
+    "dotimes"
+    "ecase"
+    "fluid-let"
+    "foreign-lambda"
+    "foreign-lambda*"
+    "foreign-primitive"
+    "foreign-safe-lambda"
+    "foreign-safe-lambda*"
+    "functor"
+    "handle-exceptions"
+    "let-location"
+    "let-optionals"
+    "let-optionals*"
+    "letrec-values"
+    "module"
+    "regex-case"
+    "select"
+    "use"
+    "with-input-from-pipe"))
 
 ;;; Customization:
 
