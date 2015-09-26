@@ -46,6 +46,12 @@
   "Customization for Geiser's Chicken flavour."
   :group 'geiser)
 
+(geiser-custom--defcustom geiser-chicken-prefix-delimiters
+    '("^:" "^#")
+    "Regex to match symbol prefix delimiters."
+  :type '(repeat string)
+  :group 'geiser-chicken)
+
 (geiser-custom--defcustom geiser-chicken-binary
   (cond ((eq system-type 'windows-nt) '("csi.exe" "-:c"))
         ((eq system-type 'darwin) "csi")
@@ -165,7 +171,15 @@ This function uses `geiser-chicken-init-file' if it exists."
 (defun geiser-chicken--exit-command () ",q")
 
 (defun geiser-chicken--symbol-begin (module)
-  (save-excursion (skip-syntax-backward "^-()>") (point)))
+  (apply
+   'max
+   (append
+    (list (save-excursion (beginning-of-line) (point))
+	  (save-excursion (skip-syntax-backward "^-()>") (point)))
+    (mapcar
+     (lambda (match-string)
+       (save-excursion (skip-chars-backward match-string) (point)))
+     geiser-chicken-prefix-delimiters))))
 
 ;;; Error display
 
