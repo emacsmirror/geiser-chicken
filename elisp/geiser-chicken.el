@@ -26,7 +26,6 @@
 
 (eval-when-compile (require 'cl))
 
-
 (defconst geiser-chicken-builtin-keywords
   '("and-let*" "assume" "compiler-typecase" "cond-expand" "condition-case"
     "cut" "cute" "declare" "define-constant" "define-inline" "define-interface"
@@ -40,6 +39,7 @@
     "unless" "use" "when" "with-input-from-pipe" "match" "match-lambda"
     "match-lambda*" "match-let" "match-let*" "receive"))
 
+
 ;;; Customization:
 
 (defgroup geiser-chicken nil
@@ -96,7 +96,7 @@ this variable to t."
   :type 'boolean
   :group 'geiser-chicken)
 
-
+
 ;;; REPL support:
 
 (defun geiser-chicken--binary ()
@@ -118,6 +118,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 
 (defconst geiser-chicken--prompt-regexp "#[^;]*;[^:0-9]*:?[0-9]+> ")
 
+
 ;;; Evaluation support:
 
 (defun geiser-chicken--geiser-procedure (proc &rest args)
@@ -171,16 +172,20 @@ This function uses `geiser-chicken-init-file' if it exists."
 (defun geiser-chicken--exit-command () ",q")
 
 (defun geiser-chicken--symbol-begin (module)
-  (apply
-   'max
-   (append
-    (list (save-excursion (beginning-of-line) (point))
-	  (save-excursion (skip-syntax-backward "^-()>") (point)))
-    (mapcar
-     (lambda (match-string)
-       (save-excursion (skip-chars-backward match-string) (point)))
-     geiser-chicken-prefix-delimiters))))
+  (let ((distance-to-beginning-of-line (- (point) (line-beginning-position))))
+    (apply
+     'max
+     (append
+      (list (save-excursion (beginning-of-line) (point))
+	    (save-excursion (skip-syntax-backward "^-()>" distance-to-beginning-of-line)
+			    (point)))
+      (mapcar
+       (lambda (match-string)
+	 (save-excursion (skip-chars-backward match-string distance-to-beginning-of-line)
+			 (point)))
+       geiser-chicken-prefix-delimiters)))))
 
+
 ;;; Error display
 
 (defun geiser-chicken--display-error (module key msg)
@@ -190,6 +195,7 @@ This function uses `geiser-chicken-init-file' if it exists."
     (geiser-edit--buttonize-files))
   (and (not key) msg (not (zerop (length msg)))))
 
+
 ;;; Trying to ascertain whether a buffer is Chicken Scheme:
 
 (defconst geiser-chicken--guess-re
@@ -204,6 +210,7 @@ This function uses `geiser-chicken-init-file' if it exists."
   "Loads chicken doc into a buffer"
   (browse-url (format "http://api.call-cc.org/cdoc?q=%s&query-name=Look+up" id)))
 
+
 ;;; Keywords and syntax
 
 (defun geiser-chicken--keywords ()
@@ -264,6 +271,7 @@ This function uses `geiser-chicken-init-file' if it exists."
  (define-interface 1)
  (module 2))
 
+
 ;;; REPL startup
 
 (defconst geiser-chicken-minimum-version "4.8.0.0")
@@ -303,6 +311,7 @@ This function uses `geiser-chicken-init-file' if it exists."
   (compilation-setup t)
   (geiser-chicken--compile-or-load (not geiser-chicken-compile-geiser-p)))
 
+
 ;;; Implementation definition:
 
 (define-geiser-implementation chicken
