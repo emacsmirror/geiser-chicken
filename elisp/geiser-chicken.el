@@ -196,11 +196,13 @@ This function uses `geiser-chicken-init-file' if it exists."
      'max
      (append
       (list (save-excursion (beginning-of-line) (point))
-	    (save-excursion (skip-syntax-backward "^-()>" distance-to-beginning-of-line)
+	    (save-excursion (skip-syntax-backward "^'-()>"
+                                                  distance-to-beginning-of-line)
 			    (point)))
       (mapcar
        (lambda (match-string)
-	 (save-excursion (skip-chars-backward match-string distance-to-beginning-of-line)
+	 (save-excursion (skip-chars-backward match-string
+                                              distance-to-beginning-of-line)
 			 (point)))
        geiser-chicken-prefix-delimiters)))))
 
@@ -283,7 +285,7 @@ This function uses `geiser-chicken-init-file' if it exists."
   (geiser-connect 'chicken))
 
 (defun geiser-chicken--compile-or-load (force-load)
-  (let ((target 
+  (let ((target
          (expand-file-name "chicken/geiser/emacs.so" geiser-scheme-dir))
         (source
          (expand-file-name "chicken/geiser/emacs.scm" geiser-scheme-dir))
