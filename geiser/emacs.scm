@@ -5,7 +5,7 @@
 ;; have received a copy of the license along with this program. If
 ;; not, see <http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5>.
 
-(module geiser
+(module geiser 
   ;; A bunch of these needn't be toplevel functions
   (geiser-eval
    geiser-no-values
@@ -26,31 +26,25 @@
    geiser-module-location
    geiser-module-completions
    geiser-macroexpand
-   make-geiser-toplevel-bindings)
+   geiser-use-debug-log)
 
-  ;; Necessary built in units
-  (import chicken
-          scheme
-          extras
-          data-structures
-          ports
-          csi
-          irregex
-          srfi-1
-          posix
-          utils)
+  (import chicken scheme)
+  (use
+    apropos
+    chicken-doc
+    csi
+    data-structures
+    extras
+    ports
+    posix
+    regex
+    srfi-1
+    srfi-13
+    srfi-18
+    tcp
+    utils)
 
-  (use apropos
-       regex
-       chicken-doc
-       tcp
-       srfi-18)
-
-  (define use-debug-log #f)
-
-  (if use-debug-log
-   (use posix))
-
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Symbol lists
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -212,10 +206,12 @@
 	 u32vector-ref u32vector-set! u8vector->blob u8vector->blob/shared
 	 u8vector-length u8vector-ref u8vector-set! unless void when write-char
 	 zero?)))
-
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Utilities
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define geiser-use-debug-log (make-parameter #t))
 
   (define find-module ##sys#find-module)
   (define current-module ##sys#current-module)
@@ -223,18 +219,31 @@
   (define module-name ##sys#module-name)
   (define (list-modules) (map car ##sys#module-table))
 
-  (define (write-to-log form) #f)
   (define debug-log (make-parameter #f))
 
-  (if use-debug-log
-   (begin
-     (define (write-to-log form)
-       (when (not (debug-log))
-         (debug-log (file-open "~/geiser-log.txt" (+ open/wronly open/append open/text open/creat)))
-         (set-file-position! (debug-log) 0 seek/end))
-       (file-write (debug-log) (with-all-output-to-string (lambda () (write form) (newline))))
-       (file-write (debug-log) "\n"))))
+  (define (write-to-log form)
+    (when (geiser-use-debug-log)
+      (when (not (debug-log))
+	(debug-log (file-open "geiser.log" (+ open/wronly open/append open/text open/creat)))
+	(set-file-position! (debug-log) 0 seek/end))
+      (file-write (debug-log) (with-all-output-to-string (lambda () (write form) (newline))))
+      (file-write (debug-log) "\n")))
 
+  (define (remove-internal-name-mangling sym)
+    (let* ((sym (->string sym))
+	   (octothorpe-index (string-index-right sym #\#)))
+      (if octothorpe-index
+      	  (values (substring/shared sym (add1 octothorpe-index))
+      		  (substring/shared sym 0 octothorpe-index))
+      	  (values sym '()))))
+
+  (define (string-has-prefix? s prefix)
+    (let ((s-length (string-length s))
+	  (prefix-length (string-length prefix)))
+      (and
+       (< prefix-length s-length)
+       (string-contains s prefix 0 prefix-length))))
+  
   ;; This really should be a chicken library function
   (define (write-exception exn)
     (define (write-call-entry call)
@@ -266,19 +275,6 @@
   (define (maybe-call func val)
     (if val (func val) #f))
 
-  (define (make-apropos-regex prefix)
-    (string-append "^([^#]+#)*" (regexp-escape prefix)))
-
-  (define (describe-symbol sym #!key (exact? #f))
-    (let* ((str (->string sym))
-           (found (apropos-information-list (regexp (make-apropos-regex str)) #:macros? #t)))
-      (delete-duplicates
-       (if exact?
-           (filter (lambda (v)
-                     (equal? str (string-substitute ".*#([^#]+)" "\\1" (symbol->string (car v)))))
-                   found)
-           found))))
-
   ;; Wraps output from geiser functions
   (define (call-with-result module thunk)
     (let* ((result (if #f #f))
@@ -300,16 +296,17 @@
       (set! result
         (cond
          ((list? result)
-          (map (lambda (v) (with-output-to-string (lambda () (pretty-print v)))) result))
+          (map (lambda (v) (with-output-to-string (lambda () (write v)))) result))
          ((eq? result (if #f #t))
           (list output))
          (else
-          (list (with-output-to-string (lambda () (pretty-print result)))))))
+          (list (with-output-to-string (lambda () (write result)))))))
 
       (let ((out-form
              `((result ,@result)
                (output . ,output))))
         (write out-form)
+	(write-to-log '[[RESPONSE]])
         (write-to-log out-form))
 
       (newline)))
@@ -381,89 +378,88 @@
            (any (cut eq? type <>) types)))
        (match-nodes sym)))))
 
+  (define (make-module-list sym module-sym)
+    (if (null? module-sym)
+	(find-standards-with-symbol sym)
+	(cons module-sym (find-standards-with-symbol sym))))
+
+  (define (fmt sym node)
+    (let* ((entry-str (car node))
+	   (module (cadr node))
+	   (rest (cddr node))
+	   (type (if (or (list? rest) (pair? rest)) (car rest) rest)))
+      (cond
+       ((equal? 'macro type)
+	`(,entry-str ("args" (("required" <macro>)
+			      ("optional" ...)
+			      ("key")))
+		     ("module" ,@(make-module-list sym module))))
+       ((or (equal? 'variable type)
+	    (equal? 'constant type))
+	(if (null? module)
+	    `(,entry-str ("value" . ,(eval sym)))
+	    (let* ((original-module (current-module))
+		   (desired-module (find-module (string->symbol module)))
+		   (value (begin (switch-module desired-module)
+				 (eval sym))))
+	      (switch-module original-module)
+	      `(,entry-str ("value" . ,value)
+			   ("module" ,@(make-module-list sym module))))))
+       (else
+	(let ((reqs '())
+	      (opts '())
+	      (keys '())
+	      (args (if (or (list? rest) (pair? rest)) (cdr rest) '())))
+
+	  (define (clean-arg arg)
+	    (string->symbol (string-substitute "(.*[^0-9]+)[0-9]+" "\\1" (->string arg))))
+
+	  (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
+	    (when (not (null? args))
+	      (cond
+	       ((or (pair? args) (list? args))
+		(cond
+		 ((eq? '#!key (car args))
+		  (collect-args (cdr args) reqs?: #f opts?: #f keys?: #t))
+		 ((eq? '#!optional (car args))
+		  (collect-args (cdr args) reqs?: #f opts?: #t keys?: #f))
+		 (else
+		  (begin
+		    (cond
+		     (reqs?
+		      (set! reqs (append reqs (list (clean-arg (car args))))))
+		     (opts?
+		      (set! opts (append opts (list (cons (clean-arg (caar args)) (cdar args))))))
+		     (keys?
+		      (set! keys (append keys (list (cons (clean-arg (caar args)) (cdar args)))))))
+		    (collect-args (cdr args))))))
+	       (else
+		(set! opts (list (clean-arg args) '...))))))
+
+	  (collect-args args)
+
+	  `(,entry-str ("args" (("required" ,@reqs)
+				("optional" ,@opts)
+				("key" ,@keys)))
+		       ("module" ,@(make-module-list sym module))))))))
+
   ;; Builds a signature list from an identifier
   (define (find-signatures toplevel-module sym)
-    (define str (->string sym))
-
-    (define (make-module-list sym module-sym)
-      (if (null? module-sym)
-          (find-standards-with-symbol sym)
-          (cons module-sym (find-standards-with-symbol sym))))
-
-    (define (fmt node)
-      (let* ((entry-str (car node))
-             (module (cadr node))
-             (rest (cddr node))
-             (type (if (or (list? rest) (pair? rest)) (car rest) rest)))
-        (cond
-         ((equal? 'macro type)
-          `(,entry-str ("args" (("required" <macro>)
-                                ("optional" ...)
-                                ("key")))
-                       ("module" ,@(make-module-list sym module))))
-         ((or (equal? 'variable type)
-              (equal? 'constant type))
-          (if (null? module)
-              `(,entry-str ("value" . ,(eval sym)))
-              (let* ((original-module (current-module))
-                     (desired-module (find-module (string->symbol module)))
-                     (value (begin (switch-module desired-module)
-                                   (eval sym))))
-                (switch-module original-module)
-                `(,entry-str ("value" . ,value)
-                             ("module" ,@(make-module-list sym module))))))
-         (else
-          (let ((reqs '())
-                (opts '())
-                (keys '())
-                (args (if (or (list? rest) (pair? rest)) (cdr rest) '())))
-
-            (define (clean-arg arg)
-              (string->symbol (string-substitute "(.*[^0-9]+)[0-9]+" "\\1" (->string arg))))
-
-            (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
-              (when (not (null? args))
-                (cond
-                 ((or (pair? args) (list? args))
-                  (cond
-                   ((eq? '#!key (car args))
-                    (collect-args (cdr args) reqs?: #f opts?: #f keys?: #t))
-                   ((eq? '#!optional (car args))
-                    (collect-args (cdr args) reqs?: #f opts?: #t keys?: #f))
-                   (else
-                    (begin
-                      (cond
-                       (reqs?
-                        (set! reqs (append reqs (list (clean-arg (car args))))))
-                       (opts?
-                        (set! opts (append opts (list (cons (clean-arg (caar args)) (cdar args))))))
-                       (keys?
-                        (set! keys (append keys (list (cons (clean-arg (caar args)) (cdar args)))))))
-                      (collect-args (cdr args))))))
-                 (else
-                  (set! opts (list (clean-arg args) '...))))))
-
-            (collect-args args)
-
-            `(,entry-str ("args" (("required" ,@reqs)
-                                  ("optional" ,@opts)
-                                  ("key" ,@keys)))
-                         ("module" ,@(make-module-list sym module))))))))
-
-    (define (find sym)
+    (let ((str (->string sym)))
       (map
-       (lambda (s)
-         ;; Remove egg name and add module
-         (let* ((str (symbol->string (car s)))
-                (name (string-substitute ".*#([^#]+)" "\\1" str))
-                (module
-                    (if (string-search "#" str)
-                        (string-substitute "^([^#]+)#[^#]+$" "\\1" str)
-                        '())))
-           (cons name (cons module (cdr s)))))
-       (describe-symbol sym exact?: #t)))
-
-    (map fmt (find sym)))
+       (cut fmt sym <>)
+       (filter
+       	(lambda (v)
+       	  (eq? (car v) sym))
+	(map
+	 (lambda (s)
+	   ;; Remove egg name and add module
+	   (let-values
+	       (((name module) (remove-internal-name-mangling (car s))))	     
+	     (cons (string->symbol name)
+		   (cons (if (symbol? module) (string->symbol module) '())
+			 (cdr s)))))
+	 (apropos-information-list sym #:macros? #t))))))
 
   ;; Builds the documentation from Chicken Doc for a specific symbol
   (define (make-doc symbol #!optional (filter-for-type #f))
@@ -484,7 +480,7 @@
      (lambda (pair)
        (toplevel-command (car pair) (cdr pair)))
      (geiser-toplevel-functions)))
-
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Geiser toplevel functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -527,6 +523,7 @@
       (define (thunk)
         (eval form))
 
+      (write-to-log '[[REQUEST]])
       (write-to-log form)
 
       (call-with-result host-module thunk)))
@@ -546,7 +543,7 @@
 
   (define-toplevel-for-geiser geiser-no-values
     (values))
-
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Miscellaneous
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -576,36 +573,32 @@
 
       (write `(port ,port))
       (newline)))
-
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Completions, Autodoc and Signature
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (geiser-completions toplevel-module prefix . rest)
-    ;; We search both toplevel definitions and module definitions
-    (let* ((prefix (if (symbol? prefix) (symbol->string prefix) prefix))
-           (re (regexp (make-apropos-regex prefix))))
-      (sort! (map (lambda (sym)
-                    ;; Strip out everything before the prefix
-                    (string-substitute (string-append ".*(" (regexp-escape prefix) ".*)") "\\1" (symbol->string sym)))
-                  (append (apropos-list re #:macros? #t)
-                          (geiser-module-completions toplevel-module prefix)))
-             string<?)))
+    (let ((prefix (->string prefix))
+	  (unfiltered (map remove-internal-name-mangling
+			   (apropos-list prefix #:macros? #t))))
+      (filter (cut string-has-prefix? <> prefix) unfiltered)))
 
   (define (geiser-module-completions toplevel-module prefix . rest)
-    (let* ((match (string-append "^" (regexp-escape prefix))))
-      (filter (lambda (v) (string-search match (symbol->string v)))
-              (list-modules))))
+    (let ((prefix (->string prefix)))
+      (filter (cut string-has-prefix? <> prefix) (map ->string (list-modules)))))
 
   (define (geiser-autodoc toplevel-module ids . rest)
-    (define (generate-details sym)
-      (find-signatures toplevel-module sym))
-
-    (if (list? ids)
-        (foldr append '()
-               (map generate-details ids))
-        '()))
-
+    (cond
+     ((null? ids) '())
+     ((not (list? ids))
+      (geiser-autodoc toplevel-module (list ids)))
+     (else
+      (let ((details (find-signatures toplevel-module (car ids))))
+	(if (null? details)
+	    (geiser-autodoc toplevel-module (cdr ids))
+	    details)))))
+  
   (define (geiser-object-signature toplevel-module name object . rest)
     (let* ((sig (geiser-autodoc toplevel-module `(,name))))
       (if (null? sig) '() (car sig))))
@@ -619,7 +612,7 @@
     (let* ((sig (find-signatures toplevel-module symbol)))
       `(("signature" ,@(car sig))
         ("docstring" . ,(make-doc symbol)))))
-
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; File and Buffer Operations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -660,7 +653,7 @@
 
   (define (geiser-compile toplevel-module form module . rest)
     (error "Chicken does not support compiling regions"))
-
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Modules
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -705,7 +698,7 @@
 
   (define (geiser-module-location toplevel-module name . rest)
     #f)
-
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -713,7 +706,7 @@
   (define (geiser-macroexpand toplevel-module form . rest)
     (with-output-to-string
       (lambda ()
-        (pretty-print (expand form)))))
+        (write (expand form)))))
 
 ;; End module
   )
