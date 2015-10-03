@@ -211,7 +211,7 @@
   ;; Utilities
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define geiser-use-debug-log (make-parameter #t))
+  (define geiser-use-debug-log (make-parameter #f))
 
   (define find-module ##sys#find-module)
   (define current-module ##sys#current-module)
