@@ -311,28 +311,6 @@
 
       (newline)))
 
-  (define geiser-toplevel-functions (make-parameter '()))
-
-  ;; This macro aids in the creation of toplevel definitions for the interpreter which are also available to code
-  ;; toplevel passes parameters via the current-input-port, and so in order to make the definition behave nicely
-  ;; in both usage contexts I defined a (get-arg) function which iteratively pulls arguments either from the
-  ;; input port or from the variable arguments, depending on context.
-  (define-syntax define-toplevel-for-geiser
-    (lambda (f r c)
-      (let* ((name (cadr f))
-             (body (cddr f)))
-        `(begin
-           (,(r 'define) (,name . !!args)
-            (,(r 'define) !!read-arg (null? !!args))
-            (,(r 'define) (get-arg)
-             (if !!read-arg
-                 (read)
-                 (let ((arg (car !!args)))
-                   (set! !!args (cdr !!args))
-                   arg)))
-            (begin ,@body))
-           (,(r 'geiser-toplevel-functions) (cons (cons ',name ,name) (geiser-toplevel-functions)))))))
-
   (define (find-standards-with-symbol sym)
     (append
      (if (any (cut eq? <> sym) (geiser-r4rs-symbols))
@@ -444,7 +422,7 @@
 		       ("module" ,@(make-module-list sym module))))))))
 
   ;; Builds a signature list from an identifier
-  (define (find-signatures toplevel-module sym)
+  (define (find-signatures sym)
     (let ((str (->string sym)))
       (map
        (cut fmt sym <>)
@@ -457,7 +435,7 @@
 	   (let-values
 	       (((name module) (remove-internal-name-mangling (car s))))	     
 	     (cons (string->symbol name)
-		   (cons (if (symbol? module) (string->symbol module) '())
+		   (cons (if (string? module) (string->symbol module) module)
 			 (cdr s)))))
 	 (apropos-information-list sym #:macros? #t))))))
 
@@ -475,64 +453,39 @@
                     (eq? (node-type n) filter-for-type)))
               (match-nodes symbol))))))
 
-  (define (make-geiser-toplevel-bindings)
-    (map
-     (lambda (pair)
-       (toplevel-command (car pair) (cdr pair)))
-     (geiser-toplevel-functions)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Geiser toplevel functions
+;; Geiser core functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ;; Basically all non-core functions pass through geiser-eval
 
-  (define-toplevel-for-geiser geiser-eval
+  (define (geiser-eval module form . rest)
     ;; We can't allow nested module definitions in Chicken
     (define (form-has-module? form)
       (let ((reg "\\( *module +|\\( *define-library +"))
         (string-search reg form)))
 
-    ;; Chicken doesn't support calling toplevel functions through eval,
-    ;; So when we're in a module or calling into an environment we have
-    ;; to first call from the toplevel environment and then switch
-    ;; into the desired env.
-    (define (form-has-geiser? form)
-      (let ((reg "\\( *geiser-"))
-        (string-search reg form)))
+    (when (and module
+	       (not (symbol? module)))
+      (error "Module should be a symbol"))
 
     ;; All calls start at toplevel
-    (let* ((module (get-arg))
-           (form (get-arg))
-           (str-form (format "~s" form))
+    (let* ((str-form (format "~s" form))
            (is-module? (form-has-module? str-form))
-           (is-geiser? (form-has-geiser? str-form))
            (host-module (and (not is-module?)
-                             (not is-geiser?)
                              (any (cut equal? module <>) (list-modules))
                              module)))
-
-      (when (and module (not (symbol? module)))
-        (error "Module should be a symbol"))
-
-      ;; Inject the desired module as the first parameter
-      (when is-geiser?
-        (let ((module (maybe-call (lambda (v) (symbol->string module)) module)))
-          (set! form (cons (car form) (cons module (cdr form))))))
-
-      (define (thunk)
-        (eval form))
 
       (write-to-log '[[REQUEST]])
       (write-to-log form)
 
-      (call-with-result host-module thunk)))
+      (call-with-result host-module (lambda () (eval form)))))
 
   ;; Load a file
 
-  (define-toplevel-for-geiser geiser-load-file
-    (let* ((file (get-arg))
-           (file (if (symbol? file) (symbol->string file) file))
+  (define (geiser-load-file file)
+    (let* ((file (if (symbol? file) (symbol->string file) file))
            (found-file (geiser-find-file #f file)))
       (call-with-result #f
        (lambda ()
@@ -541,7 +494,7 @@
 
   ;; The no-values identity
 
-  (define-toplevel-for-geiser geiser-no-values
+  (define (geiser-no-values)
     (values))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -578,38 +531,38 @@
 ;; Completions, Autodoc and Signature
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define (geiser-completions toplevel-module prefix . rest)
+  (define (geiser-completions prefix . rest)
     (let ((prefix (->string prefix))
 	  (unfiltered (map remove-internal-name-mangling
 			   (apropos-list prefix #:macros? #t))))
       (filter (cut string-has-prefix? <> prefix) unfiltered)))
 
-  (define (geiser-module-completions toplevel-module prefix . rest)
+  (define (geiser-module-completions prefix . rest)
     (let ((prefix (->string prefix)))
       (filter (cut string-has-prefix? <> prefix) (map ->string (list-modules)))))
 
-  (define (geiser-autodoc toplevel-module ids . rest)
+  (define (geiser-autodoc ids . rest)
     (cond
      ((null? ids) '())
      ((not (list? ids))
-      (geiser-autodoc toplevel-module (list ids)))
+      (geiser-autodoc (list ids)))
      (else
-      (let ((details (find-signatures toplevel-module (car ids))))
+      (let ((details (find-signatures (car ids))))
 	(if (null? details)
-	    (geiser-autodoc toplevel-module (cdr ids))
+	    (geiser-autodoc (cdr ids))
 	    details)))))
   
-  (define (geiser-object-signature toplevel-module name object . rest)
-    (let* ((sig (geiser-autodoc toplevel-module `(,name))))
+  (define (geiser-object-signature name object . rest)
+    (let* ((sig (geiser-autodoc `(,name))))
       (if (null? sig) '() (car sig))))
 
     ;; TODO: Divine some way to support this functionality
 
-  (define (geiser-symbol-location toplevel-module symbol . rest)
+  (define (geiser-symbol-location symbol . rest)
     '(("file") ("line")))
 
-  (define (geiser-symbol-documentation toplevel-module symbol . rest)
-    (let* ((sig (find-signatures toplevel-module symbol)))
+  (define (geiser-symbol-documentation symbol . rest)
+    (let* ((sig (find-signatures symbol)))
       `(("signature" ,@(car sig))
         ("docstring" . ,(make-doc symbol)))))
 
@@ -619,7 +572,7 @@
 
   (define geiser-load-paths (make-parameter '()))
 
-  (define (geiser-find-file toplevel-module file . rest)
+  (define (geiser-find-file file . rest)
     (let ((paths (append '("" ".") (geiser-load-paths))))
       (define (try-find file paths)
         (cond
@@ -629,7 +582,7 @@
          (else (try-find file (cdr paths)))))
       (try-find file paths)))
 
-  (define (geiser-add-to-load-path toplevel-module directory . rest)
+  (define (geiser-add-to-load-path directory . rest)
     (let* ((directory (if (symbol? directory)
                           (symbol->string directory)
                           directory))
@@ -641,9 +594,9 @@
          (when (directory-exists? directory)
            (geiser-load-paths (cons directory (geiser-load-paths))))))))
 
-  (define (geiser-compile-file toplevel-module file . rest)
+  (define (geiser-compile-file file . rest)
     (let* ((file (if (symbol? file) (symbol->string file) file))
-           (found-file (geiser-find-file toplevel-module file)))
+           (found-file (geiser-find-file file)))
       (call-with-result #f
        (lambda ()
          (when found-file
@@ -651,7 +604,7 @@
 
     ;; TODO: Support compiling regions
 
-  (define (geiser-compile toplevel-module form module . rest)
+  (define (geiser-compile form module . rest)
     (error "Chicken does not support compiling regions"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -660,7 +613,7 @@
 
   ;; Should return:
   ;; '(("modules" . sub-modules) ("procs" . procedures) ("syntax" . macros) ("vars" . variables))
-  (define (geiser-module-exports toplevel-module module-name . rest)
+  (define (geiser-module-exports module-name . rest)
     (let* ((nodes (match-nodes module-name)))
       (if (null? nodes)
           '()
@@ -690,26 +643,23 @@
 
   ;; Returns the path for the file in which an egg or module was defined
 
-  (define (geiser-module-path toplevel-module module-name . rest)
+  (define (geiser-module-path module-name . rest)
     #f)
 
   ;; Returns:
   ;; `(("file" . ,(module-path name)) ("line"))
 
-  (define (geiser-module-location toplevel-module name . rest)
+  (define (geiser-module-location name . rest)
     #f)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define (geiser-macroexpand toplevel-module form . rest)
+  (define (geiser-macroexpand form . rest)
     (with-output-to-string
       (lambda ()
         (write (expand form)))))
 
 ;; End module
   )
-
-(import geiser)
-(make-geiser-toplevel-bindings)
