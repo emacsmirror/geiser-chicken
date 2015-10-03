@@ -5,8 +5,7 @@
 ;; have received a copy of the license along with this program. If
 ;; not, see <http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5>.
 
-(module geiser 
-  ;; A bunch of these needn't be toplevel functions
+(module geiser
   (geiser-eval
    geiser-no-values
    geiser-newline
@@ -37,10 +36,11 @@
     extras
     ports
     posix
-    regex
     srfi-1
     srfi-13
+    srfi-14
     srfi-18
+    srfi-69
     tcp
     utils)
 
@@ -219,8 +219,17 @@
   (define module-name ##sys#module-name)
   (define (list-modules) (map car ##sys#module-table))
 
-  (define debug-log (make-parameter #f))
+  (define memo (make-parameter (make-hash-table)))
+  (define (clear-memo) (hash-table-clear! (memo)))
+  (define (memoize tag thunk)
+    (let ((table (memo)))
+      (if (hash-table-exists? table tag)
+	  (hash-table-ref table tag)
+	  (begin
+	    (hash-table-set! table tag (thunk))
+	    (memoize tag thunk)))))
 
+  (define debug-log (make-parameter #f))
   (define (write-to-log form)
     (when (geiser-use-debug-log)
       (when (not (debug-log))
@@ -390,7 +399,8 @@
 	      (args (if (or (list? rest) (pair? rest)) (cdr rest) '())))
 
 	  (define (clean-arg arg)
-	    (string->symbol (string-substitute "(.*[^0-9]+)[0-9]+" "\\1" (->string arg))))
+	    (let ((s (->string arg)))
+	      (substring/shared s 0 (string-skip-right s char-set:digit))))
 
 	  (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
 	    (when (not (null? args))
@@ -452,7 +462,7 @@
                 (or (not filter-for-type)
                     (eq? (node-type n) filter-for-type)))
               (match-nodes symbol))))))
-
+  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Geiser core functions
@@ -463,24 +473,36 @@
   (define (geiser-eval module form . rest)
     ;; We can't allow nested module definitions in Chicken
     (define (form-has-module? form)
-      (let ((reg "\\( *module +|\\( *define-library +"))
-        (string-search reg form)))
+      (or (eq? (car form) 'module) (eq? (car form) 'define-library)))
 
+    (define (form-has-safe-geiser? form)
+      (any (cut eq? (car form) <>)
+	   '(geiser-no-values geiser-newline geiser-start-server geiser-completions
+	     geiser-autodoc geiser-object-signature geiser-symbol-location
+	     geiser-symbol-documentation geiser-find-file geiser-add-to-load-path
+	     geiser-module-exports geiser-module-path geiser-module-location
+	     geiser-module-completions geiser-macroexpand geiser-use-debug-log)))
+    
     (when (and module
 	       (not (symbol? module)))
       (error "Module should be a symbol"))
 
     ;; All calls start at toplevel
-    (let* ((str-form (format "~s" form))
-           (is-module? (form-has-module? str-form))
+    (let* ((is-module? (form-has-module? form))
+	   (is-safe-geiser? (form-has-safe-geiser? form))
            (host-module (and (not is-module?)
                              (any (cut equal? module <>) (list-modules))
-                             module)))
+                             module))
+	   (thunk (lambda () (eval form))))
 
-      (write-to-log '[[REQUEST]])
+      (write-to-log `[[REQUEST host-module ,host-module is-safe-geiser? ,is-safe-geiser?]])
       (write-to-log form)
 
-      (call-with-result host-module (lambda () (eval form)))))
+      (if is-safe-geiser?
+	  (call-with-result host-module (lambda () (memoize form thunk)))
+	  (begin
+	    (clear-memo)
+	    (call-with-result host-module thunk)))))
 
   ;; Load a file
 
