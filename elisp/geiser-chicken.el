@@ -141,20 +141,17 @@ This function uses `geiser-chicken-init-file' if it exists."
 ;;; Evaluation support:
 
 (defun geiser-chicken--geiser-procedure (proc &rest args)
-  (let ((fmt
-         (case proc
-           ((eval compile)
-            (let ((form (mapconcat 'identity (cdr args) " ")))
-              (format ",geiser-eval %s %s" (or (car args) "#f") form)))
-           ((load-file compile-file)
-            (format ",geiser-load-file %s" (car args)))
-           ((no-values)
-            ",geiser-no-values")
-           (t
-            (let ((form (mapconcat 'identity args " ")))
-              (format "(geiser-%s %s)" proc form))))))
-    ;;(message fmt)
-    fmt))
+  (case proc
+    ((eval compile)
+     (let ((form (mapconcat 'identity (cdr args) " ")))
+       (format "(geiser-eval %s '%s)" (or (car args) "#f") form)))
+    ((load-file compile-file)
+     (format "(geiser-load-file %s)" (car args)))
+    ((no-values)
+     "(geiser-no-values)")
+    (t
+     (let ((form (mapconcat 'identity args " ")))
+       (format "(geiser-%s %s)" proc form)))))
 
 (defconst geiser-chicken--module-re
   "( *module +\\(([^)]+)\\|[^ ]+\\)\\|( *define-library +\\(([^)]+)\\|[^ ]+\\)")
@@ -195,14 +192,11 @@ This function uses `geiser-chicken-init-file' if it exists."
     (apply
      'max
      (append
-      (list (save-excursion (beginning-of-line) (point))
-	    (save-excursion (skip-syntax-backward "^'-()>"
-                                                  distance-to-beginning-of-line)
+      (list (save-excursion (skip-syntax-backward "^'(>" distance-to-beginning-of-line)
 			    (point)))
       (mapcar
        (lambda (match-string)
-	 (save-excursion (skip-chars-backward match-string
-                                              distance-to-beginning-of-line)
+	 (save-excursion (skip-chars-backward match-string distance-to-beginning-of-line)
 			 (point)))
        geiser-chicken-prefix-delimiters)))))
 
@@ -297,7 +291,7 @@ This function uses `geiser-chicken-init-file' if it exists."
     (let ((load-sequence
            (cond
             (force-load
-             (format "(load \"%s\")\n" source))
+             (format "(load \"%s\")\n(import geiser)\n" source))
             ((file-exists-p target)
              (format "%s(load \"%s\")(import geiser)%s\n"
                      suppression-prefix target suppression-postfix))
