@@ -296,7 +296,7 @@ This function uses `geiser-chicken-init-file' if it exists."
              (format "%s(load \"%s\")(import geiser)%s\n"
                      suppression-prefix target suppression-postfix))
             (t
-             (format "%s(use utils)(compile-file \"%s\" options: '(\"-O3\") output-file: \"%s\" load: #t)(import geiser)%s\n"
+             (format "%s(use utils)(compile-file \"%s\" options: '(\"-O3\" \"-s\") output-file: \"%s\" load: #t)(import geiser)%s\n"
                      suppression-prefix source target suppression-postfix)))))
       (geiser-eval--send/wait load-sequence))))
 
