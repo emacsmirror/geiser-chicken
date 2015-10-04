@@ -476,11 +476,11 @@
 
     (define (form-has-safe-geiser? form)
       (any (cut eq? (car form) <>)
-	   '(geiser-no-values geiser-newline geiser-start-server geiser-completions
+	   '(geiser-no-values geiser-newline geiser-completions
 	     geiser-autodoc geiser-object-signature geiser-symbol-location
 	     geiser-symbol-documentation geiser-find-file geiser-add-to-load-path
 	     geiser-module-exports geiser-module-path geiser-module-location
-	     geiser-module-completions geiser-macroexpand geiser-use-debug-log)))
+	     geiser-module-completions geiser-use-debug-log)))
     
     (when (and module
 	       (not (symbol? module)))
