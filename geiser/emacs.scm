@@ -31,7 +31,6 @@
   (use
     apropos
     chicken-doc
-    csi
     data-structures
     extras
     ports
