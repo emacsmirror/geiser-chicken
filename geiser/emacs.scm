@@ -432,21 +432,20 @@
 
   ;; Builds a signature list from an identifier
   (define (find-signatures sym)
-    (let ((str (->string sym)))
+    (map
+     (cut fmt sym <>)
+     (filter
+      (lambda (v)
+	(eq? (car v) sym))
       (map
-       (cut fmt sym <>)
-       (filter
-       	(lambda (v)
-       	  (eq? (car v) sym))
-	(map
-	 (lambda (s)
-	   ;; Remove egg name and add module
-	   (let-values
-	       (((name module) (remove-internal-name-mangling (car s))))	     
-	     (cons (string->symbol name)
-		   (cons (if (string? module) (string->symbol module) module)
-			 (cdr s)))))
-	 (apropos-information-list sym #:macros? #t))))))
+       (lambda (s)
+	 ;; Remove egg name and add module
+	 (let-values
+	     (((name module) (remove-internal-name-mangling (car s))))	     
+	   (cons (string->symbol name)
+		 (cons (if (string? module) (string->symbol module) module)
+		       (cdr s)))))
+       (apropos-information-list sym #:macros? #t)))))
 
   ;; Builds the documentation from Chicken Doc for a specific symbol
   (define (make-doc symbol #!optional (filter-for-type #f))
@@ -482,14 +481,18 @@
 	     geiser-module-exports geiser-module-path geiser-module-location
 	     geiser-module-completions geiser-use-debug-log)))
     
-    (when (and module
-	       (not (symbol? module)))
+    (define (form-has-any-geiser? form)
+      (string-has-prefix? (->string (car form)) "geiser-"))
+    
+    (when (and module (not (symbol? module)))
       (error "Module should be a symbol"))
 
     ;; All calls start at toplevel
     (let* ((is-module? (form-has-module? form))
+	   (is-geiser? (form-has-any-geiser? form))
 	   (is-safe-geiser? (form-has-safe-geiser? form))
            (host-module (and (not is-module?)
+			     (not is-geiser?)
                              (any (cut equal? module <>) (list-modules))
                              module))
 	   (thunk (lambda () (eval form))))
@@ -567,6 +570,8 @@
      ((null? ids) '())
      ((not (list? ids))
       (geiser-autodoc (list ids)))
+     ((not (symbol? (car ids)))
+      (geiser-autodoc (cdr ids)))
      (else
       (let ((details (find-signatures (car ids))))
 	(if (null? details)
