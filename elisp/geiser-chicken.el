@@ -143,8 +143,9 @@ This function uses `geiser-chicken-init-file' if it exists."
 (defun geiser-chicken--geiser-procedure (proc &rest args)
   (case proc
     ((eval compile)
-     (let ((form (mapconcat 'identity (cdr args) " ")))
-       (format "(geiser-eval %s '%s)" (or (car args) "#f") form)))
+     (let ((form (mapconcat 'identity (cdr args) " "))
+	   (module (if (car args) (concat "'" (car args)) "#f")))
+       (format "(geiser-eval %s '%s)" module form)))
     ((load-file compile-file)
      (format "(geiser-load-file %s)" (car args)))
     ((no-values)
