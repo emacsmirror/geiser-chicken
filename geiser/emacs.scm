@@ -399,7 +399,7 @@
 
 	  (define (clean-arg arg)
 	    (let ((s (->string arg)))
-	      (substring/shared s 0 (string-skip-right s char-set:digit))))
+	      (substring/shared s 0 (add1 (string-skip-right s char-set:digit)))))
 
 	  (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
 	    (when (not (null? args))
