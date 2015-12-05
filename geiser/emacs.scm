@@ -469,10 +469,6 @@
   ;; Basically all non-core functions pass through geiser-eval
 
   (define (geiser-eval module form . rest)
-    ;; We can't allow nested module definitions in Chicken
-    (define (form-has-module? form)
-      (or (eq? (car form) 'module) (eq? (car form) 'define-library)))
-
     (define (form-has-safe-geiser? form)
       (any (cut eq? (car form) <>)
 	   '(geiser-no-values geiser-newline geiser-completions
@@ -483,25 +479,35 @@
     
     (define (form-has-any-geiser? form)
       (string-has-prefix? (->string (car form)) "geiser-"))
+
+    (define (form-defines-any-module? form)
+      (or
+       ;; Geiser seems to send buffers as (begin ..buffer contents..)
+       (and (eq? (car form) 'begin)
+	    (form-defines-any-module? (cadr form)))
+       (any (cut eq? (car form) <>)
+	    '(module define-library))))
+
+    (define (module-matches-defined-module? module)
+      (any (cut eq? module <>) (list-modules)))
     
     (when (and module (not (symbol? module)))
       (error "Module should be a symbol"))
-
+    
     ;; All calls start at toplevel
-    (let* ((is-module? (form-has-module? form))
-	   (is-geiser? (form-has-any-geiser? form))
-	   (is-safe-geiser? (form-has-safe-geiser? form))
-           (host-module (and (not is-module?)
-			     (not is-geiser?)
-                             (any (cut equal? module <>) (list-modules))
+    (let* ((is-safe-geiser? (form-has-safe-geiser? form))
+	   (host-module (and (not is-safe-geiser?)
+			     (not (form-has-any-geiser? form))
+			     (not (form-defines-any-module? form))
+			     (module-matches-defined-module? module)
                              module))
 	   (thunk (lambda () (eval form))))
 
-      (write-to-log `[[REQUEST host-module ,host-module is-safe-geiser? ,is-safe-geiser?]])
+      (write-to-log `[[REQUEST]])
       (write-to-log form)
 
       (if is-safe-geiser?
-	  (call-with-result host-module (lambda () (memoize form thunk)))
+	  (call-with-result #f (lambda () (memoize form thunk)))
 	  (begin
 	    (clear-memo)
 	    (call-with-result host-module thunk)))))
