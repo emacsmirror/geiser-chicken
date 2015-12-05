@@ -223,10 +223,13 @@
   (define (memoize tag thunk)
     (let ((table (memo)))
       (if (hash-table-exists? table tag)
-	  (hash-table-ref table tag)
 	  (begin
+	    (write-to-log '[[Cache Hit]])
+	    (hash-table-ref table tag))
+	  (begin
+	    (write-to-log '[[Cache Miss]])
 	    (hash-table-set! table tag (thunk))
-	    (memoize tag thunk)))))
+	    (hash-table-ref table tag)))))
 
   (define debug-log (make-parameter #f))
   (define (write-to-log form)
@@ -562,10 +565,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (geiser-completions prefix . rest)
-    (let ((prefix (->string prefix))
-	  (unfiltered (map remove-internal-name-mangling
-			   (apropos-list prefix #:macros? #t))))
-      (filter (cut string-has-prefix? <> prefix) unfiltered)))
+    (let ((prefix (->string prefix)))
+      (filter
+       (cut string-has-prefix? <> prefix)
+       (map remove-internal-name-mangling
+	    (apropos-list prefix #:macros? #t)))))
 
   (define (geiser-module-completions prefix . rest)
     (let ((prefix (->string prefix)))
