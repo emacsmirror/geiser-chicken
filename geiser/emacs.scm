@@ -25,7 +25,8 @@
    geiser-module-location
    geiser-module-completions
    geiser-macroexpand
-   geiser-use-debug-log)
+   geiser-use-debug-log
+   geiser-load-paths)
 
   (import chicken scheme)
   (use
@@ -476,8 +477,8 @@
       (any (cut eq? (car form) <>)
 	   '(geiser-no-values geiser-newline geiser-completions
 	     geiser-autodoc geiser-object-signature geiser-symbol-location
-	     geiser-symbol-documentation geiser-find-file geiser-add-to-load-path
-	     geiser-module-exports geiser-module-path geiser-module-location
+	     geiser-symbol-documentation geiser-module-exports
+	     geiser-module-path geiser-module-location
 	     geiser-module-completions geiser-use-debug-log)))
     
     (define (form-has-any-geiser? form)
@@ -506,7 +507,7 @@
                              module))
 	   (thunk (lambda () (eval form))))
 
-      (write-to-log `[[REQUEST]])
+      (write-to-log `[[REQUEST host-module: ,host-module]])
       (write-to-log form)
 
       (if is-safe-geiser?
@@ -606,10 +607,10 @@
 ;; File and Buffer Operations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define geiser-load-paths (make-parameter '()))
+  (define geiser-load-paths (make-parameter '("" ".")))
 
   (define (geiser-find-file file . rest)
-    (let ((paths (append '("" ".") (geiser-load-paths))))
+    (let ((paths (geiser-load-paths)))
       (define (try-find file paths)
         (cond
          ((null? paths) #f)
