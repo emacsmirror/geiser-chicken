@@ -274,7 +274,8 @@ This function uses `geiser-chicken-init-file' if it exists."
 
 (defun geiser-chicken--version (binary)
   (shell-command-to-string
-   (format "%s -e %s" binary
+   (format "%s -e %s"
+           (shell-quote-binary binary)
            (shell-quote-argument "(display (chicken-version))"))))
 
 (defun connect-to-chicken ()
