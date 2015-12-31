@@ -231,7 +231,25 @@
 	    (write-to-log '[[Cache Miss]])
 	    (hash-table-set! table tag (thunk))
 	    (hash-table-ref table tag)))))
+  
+  (define (symbol-information-list)
+    (memoize
+     '(symbol-information-list)
+     (lambda ()
+       (map (lambda (lst)
+	      (let-values (((name module) (remove-internal-name-mangling (car lst))))
+		(append (list name module) (cdr lst))))
+	    (apropos-information-list "" #:macros? #t)))))
 
+  (define (find-symbol-information prefix)
+    (memoize
+     `(find-symbol-information ,prefix)
+     (lambda ()
+       (filter
+	(lambda (info)
+	  (string-has-prefix? (car info) (->string prefix)))
+	(symbol-information-list)))))
+  
   (define debug-log (make-parameter #f))
   (define (write-to-log form)
     (when (geiser-use-debug-log)
@@ -242,19 +260,20 @@
       (file-write (debug-log) "\n")))
 
   (define (remove-internal-name-mangling sym)
-    (let* ((sym (->string sym))
+    (let* ((sym (symbol->string sym))
 	   (octothorpe-index (string-index-right sym #\#)))
       (if octothorpe-index
       	  (values (substring/shared sym (add1 octothorpe-index))
       		  (substring/shared sym 0 octothorpe-index))
-      	  (values sym '()))))
+      	  (values sym #f))))
 
   (define (string-has-prefix? s prefix)
-    (let ((s-length (string-length s))
-	  (prefix-length (string-length prefix)))
-      (and
-       (< prefix-length s-length)
-       (string-contains s prefix 0 prefix-length))))
+    (cond
+     ((= 0 (string-length prefix)) #t)
+     ((= 0 (string-length s)) #f)
+     ((eq? (string-ref s 0) (string-ref prefix 0))
+      (string-has-prefix? (substring/shared s 1) (substring/shared prefix 1)))
+     (else #f)))
   
   ;; This really should be a chicken library function
   (define (write-exception exn)
@@ -369,87 +388,86 @@
        (match-nodes sym)))))
 
   (define (make-module-list sym module-sym)
-    (if (null? module-sym)
+    (if (not module-sym)
 	(find-standards-with-symbol sym)
 	(cons module-sym (find-standards-with-symbol sym))))
+  
+  (define (fmt node)
+    (memoize
+     `(fmt ,node)
+     (lambda ()
+       (let* ((entry (string->symbol (car node)))
+	      (module (cadr node))
+	      (module (if module (string->symbol module) #f))
+	      (rest (cddr node))
+	      (type (if (or (list? rest) (pair? rest)) (car rest) rest)))
+	 (cond
+	  ((equal? 'macro type)
+	   `(,entry ("args" (("required" <macro>)
+			     ("optional" ...)
+			     ("key")))
+		    ("module" ,@(make-module-list entry module))))
+	  ((or (equal? 'variable type)
+	       (equal? 'constant type))
+	   (if (not module)
+	       `(,entry ("value" . ,(eval entry)))
+	       (let* ((original-module (current-module))
+		      (desired-module (find-module module))
+		      (value (begin (switch-module desired-module)
+				    (eval entry))))
+		 (switch-module original-module)
+		 `(,entry ("value" . ,value)
+			  ("module" ,@(make-module-list entry module))))))
+	  (else
+	   (let ((reqs '())
+		 (opts '())
+		 (keys '())
+		 (args (if (or (list? rest) (pair? rest)) (cdr rest) '())))
 
-  (define (fmt sym node)
-    (let* ((entry-str (car node))
-	   (module (cadr node))
-	   (rest (cddr node))
-	   (type (if (or (list? rest) (pair? rest)) (car rest) rest)))
-      (cond
-       ((equal? 'macro type)
-	`(,entry-str ("args" (("required" <macro>)
-			      ("optional" ...)
-			      ("key")))
-		     ("module" ,@(make-module-list sym module))))
-       ((or (equal? 'variable type)
-	    (equal? 'constant type))
-	(if (null? module)
-	    `(,entry-str ("value" . ,(eval sym)))
-	    (let* ((original-module (current-module))
-		   (desired-module (find-module (string->symbol module)))
-		   (value (begin (switch-module desired-module)
-				 (eval sym))))
-	      (switch-module original-module)
-	      `(,entry-str ("value" . ,value)
-			   ("module" ,@(make-module-list sym module))))))
-       (else
-	(let ((reqs '())
-	      (opts '())
-	      (keys '())
-	      (args (if (or (list? rest) (pair? rest)) (cdr rest) '())))
+	     (define (clean-arg arg)
+	       (let ((s (->string arg)))
+		 (string->symbol (substring/shared s 0 (add1 (string-skip-right s char-set:digit))))))
 
-	  (define (clean-arg arg)
-	    (let ((s (->string arg)))
-	      (string->symbol (substring/shared s 0 (add1 (string-skip-right s char-set:digit))))))
+	     (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
+	       (when (not (null? args))
+		 (cond
+		  ((or (pair? args) (list? args))
+		   (cond
+		    ((eq? '#!key (car args))
+		     (collect-args (cdr args) reqs?: #f opts?: #f keys?: #t))
+		    ((eq? '#!optional (car args))
+		     (collect-args (cdr args) reqs?: #f opts?: #t keys?: #f))
+		    (else
+		     (begin
+		       (cond
+			(reqs?
+			 (set! reqs (append reqs (list (clean-arg (car args))))))
+			(opts?
+			 (set! opts (append opts (list (cons (clean-arg (caar args)) (cdar args))))))
+			(keys?
+			 (set! keys (append keys (list (cons (clean-arg (caar args)) (cdar args)))))))
+		       (collect-args (cdr args))))))
+		  (else
+		   (set! opts (list (clean-arg args) '...))))))
 
-	  (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
-	    (when (not (null? args))
-	      (cond
-	       ((or (pair? args) (list? args))
-		(cond
-		 ((eq? '#!key (car args))
-		  (collect-args (cdr args) reqs?: #f opts?: #f keys?: #t))
-		 ((eq? '#!optional (car args))
-		  (collect-args (cdr args) reqs?: #f opts?: #t keys?: #f))
-		 (else
-		  (begin
-		    (cond
-		     (reqs?
-		      (set! reqs (append reqs (list (clean-arg (car args))))))
-		     (opts?
-		      (set! opts (append opts (list (cons (clean-arg (caar args)) (cdar args))))))
-		     (keys?
-		      (set! keys (append keys (list (cons (clean-arg (caar args)) (cdar args)))))))
-		    (collect-args (cdr args))))))
-	       (else
-		(set! opts (list (clean-arg args) '...))))))
+	     (collect-args args)
 
-	  (collect-args args)
-
-	  `(,entry-str ("args" (("required" ,@reqs)
-				("optional" ,@opts)
-				("key" ,@keys)))
-		       ("module" ,@(make-module-list sym module))))))))
+	     `(,entry ("args" (("required" ,@reqs)
+			       ("optional" ,@opts)
+			       ("key" ,@keys)))
+		      ("module" ,@(make-module-list entry module))))))))))
 
   ;; Builds a signature list from an identifier
   (define (find-signatures sym)
-    (map
-     (cut fmt sym <>)
-     (filter
-      (lambda (v)
-	(eq? (car v) sym))
-      (map
-       (lambda (s)
-	 ;; Remove egg name and add module
-	 (let-values
-	     (((name module) (remove-internal-name-mangling (car s))))	     
-	   (cons (string->symbol name)
-		 (cons (if (string? module) (string->symbol module) module)
-		       (cdr s)))))
-       (apropos-information-list sym #:macros? #t)))))
+    (memoize
+     `(find-signatures ,sym)
+     (lambda ()
+       (let ((str (symbol->string sym)))
+	 (map
+	  (cut fmt <>)
+	  (filter
+	   (lambda (lst) (string=? (car lst) str))
+	   (find-symbol-information sym)))))))
 
   ;; Builds the documentation from Chicken Doc for a specific symbol
   (define (make-doc symbol #!optional (filter-for-type #f))
@@ -566,11 +584,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (geiser-completions prefix . rest)
-    (let ((prefix (->string prefix)))
-      (filter
-       (cut string-has-prefix? <> prefix)
-       (map remove-internal-name-mangling
-	    (apropos-list prefix #:macros? #t)))))
+    (map car (find-symbol-information prefix)))
 
   (define (geiser-module-completions prefix . rest)
     (let ((prefix (->string prefix)))
