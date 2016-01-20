@@ -242,13 +242,18 @@
 	    (apropos-information-list "" #:macros? #t)))))
 
   (define (find-symbol-information prefix)
+    (define (find-symbol-information* prefix skipped)
+      (let ((found (filter
+		    (lambda (info)
+		      (string-has-prefix? (car info) prefix))
+		    (symbol-information-list))))
+	(if (and (null? found) (< 1 (string-length prefix)))
+	    (find-symbol-information* (substring/shared prefix 1) (string-append skipped (substring prefix 0 1)))
+	    (cons found skipped))))
     (memoize
      `(find-symbol-information ,prefix)
      (lambda ()
-       (filter
-	(lambda (info)
-	  (string-has-prefix? (car info) (->string prefix)))
-	(symbol-information-list)))))
+       (find-symbol-information* (->string prefix) ""))))
   
   (define debug-log (make-parameter #f))
   (define (write-to-log form)
@@ -387,37 +392,42 @@
            (any (cut eq? type <>) types)))
        (match-nodes sym)))))
 
-  (define (make-module-list sym module-sym)
-    (if (not module-sym)
-	(find-standards-with-symbol sym)
-	(cons module-sym (find-standards-with-symbol sym))))
+  (define (make-module-list sym module-sym prefix-exists)
+    (append
+     (if prefix-exists '(fuzzy-match) '())
+     (if (not module-sym)
+	 (find-standards-with-symbol sym)
+	 (cons module-sym (find-standards-with-symbol sym)))))
   
-  (define (fmt node)
+  (define (fmt node prefix)
     (memoize
-     `(fmt ,node)
+     `(fmt ,node ,prefix)
      (lambda ()
-       (let* ((entry (string->symbol (car node)))
+       (let* ((original-entry (string->symbol (car node)))
+	      (fuzzy-entry (string->symbol (string-append prefix (car node))))
+	      (prefix-exists (not (= 0 (string-length prefix))))
 	      (module (cadr node))
 	      (module (if module (string->symbol module) #f))
 	      (rest (cddr node))
-	      (type (if (or (list? rest) (pair? rest)) (car rest) rest)))
+	      (type (if (or (list? rest) (pair? rest)) (car rest) rest))
+	      (module-list (make-module-list fuzzy-entry module prefix-exists)))
 	 (cond
 	  ((equal? 'macro type)
-	   `(,entry ("args" (("required" <macro>)
-			     ("optional" ...)
-			     ("key")))
-		    ("module" ,@(make-module-list entry module))))
+	   `(,fuzzy-entry ("args" (("required" <macro>)
+				   ("optional" ...)
+				   ("key")))
+			  ("module" ,@module-list)))
 	  ((or (equal? 'variable type)
 	       (equal? 'constant type))
 	   (if (not module)
-	       `(,entry ("value" . ,(eval entry)))
+	       `(,fuzzy-entry ("value" . ,(eval original-entry)))
 	       (let* ((original-module (current-module))
 		      (desired-module (find-module module))
 		      (value (begin (switch-module desired-module)
-				    (eval entry))))
+				    (eval original-entry))))
 		 (switch-module original-module)
-		 `(,entry ("value" . ,value)
-			  ("module" ,@(make-module-list entry module))))))
+		 `(,fuzzy-entry ("value" . ,value)
+				("module" ,@module-list)))))
 	  (else
 	   (let ((reqs '())
 		 (opts '())
@@ -452,22 +462,20 @@
 
 	     (collect-args args)
 
-	     `(,entry ("args" (("required" ,@reqs)
-			       ("optional" ,@opts)
-			       ("key" ,@keys)))
-		      ("module" ,@(make-module-list entry module))))))))))
+	     `(,fuzzy-entry ("args" (("required" ,@reqs)
+				     ("optional" ,@opts)
+				     ("key" ,@keys)))
+			    ("module" ,@module-list)))))))))
 
   ;; Builds a signature list from an identifier
   (define (find-signatures sym)
     (memoize
      `(find-signatures ,sym)
      (lambda ()
-       (let ((str (symbol->string sym)))
+       (let ((result (find-symbol-information sym)))
 	 (map
-	  (cut fmt <>)
-	  (filter
-	   (lambda (lst) (string=? (car lst) str))
-	   (find-symbol-information sym)))))))
+	  (cut fmt <> (cdr result))
+	  (car result))))))
 
   ;; Builds the documentation from Chicken Doc for a specific symbol
   (define (make-doc symbol #!optional (filter-for-type #f))
@@ -584,7 +592,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (geiser-completions prefix . rest)
-    (map car (find-symbol-information prefix)))
+    (let* ((result (find-symbol-information prefix))
+	   (prefix (cdr result))
+	   (result-list (car result)))
+      (map
+       (cut string-append prefix <>)
+       (map car result-list))))
 
   (define (geiser-module-completions prefix . rest)
     (let ((prefix (->string prefix)))
