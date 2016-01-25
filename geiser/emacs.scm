@@ -227,9 +227,10 @@
 	  (begin
 	    (write-to-log '[[Cache Hit]])
 	    (hash-table-ref table tag))
-	  (begin
+	  (fluid-let ((memoize (lambda (tag thunk) (thunk))))
 	    (write-to-log '[[Cache Miss]])
 	    (hash-table-set! table tag (thunk))
+	    
 	    (hash-table-ref table tag)))))
   
   (define (symbol-information-list)
