@@ -1,3 +1,5 @@
+;; -*- geiser-scheme-implementation: 'chicken
+
 ;; Copyright (C) 2015 Daniel J Leslie
 
 ;; This program is free software; you can redistribute it and/or
@@ -547,7 +549,7 @@
 
   (define (geiser-load-file file)
     (let* ((file (if (symbol? file) (symbol->string file) file))
-           (found-file (geiser-find-file #f file)))
+           (found-file (geiser-find-file file)))
       (call-with-result #f
        (lambda ()
          (when found-file
@@ -638,14 +640,15 @@
   (define geiser-load-paths (make-parameter '("" ".")))
 
   (define (geiser-find-file file . rest)
-    (let ((paths (geiser-load-paths)))
-      (define (try-find file paths)
-        (cond
-         ((null? paths) #f)
-         ((file-exists? (string-append (car paths) file))
-          (string-append (car paths) file))
-         (else (try-find file (cdr paths)))))
-      (try-find file paths)))
+    (when file
+      (let ((paths (geiser-load-paths)))
+	(define (try-find file paths)
+	  (cond
+	   ((null? paths) #f)
+	   ((file-exists? (string-append (car paths) file))
+	    (string-append (car paths) file))
+	   (else (try-find file (cdr paths)))))
+	(try-find file paths))))
 
   (define (geiser-add-to-load-path directory . rest)
     (let* ((directory (if (symbol? directory)
