@@ -705,7 +705,7 @@
                    (set! var (cons name var))))))
              nodes)
             `(("modules" . ,mod)
-              ("proces" . ,proc)
+              ("procs" . ,proc)
               ("syntax" . ,syn)
               ("vars" . ,var))))))
 
