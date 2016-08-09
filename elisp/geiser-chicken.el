@@ -104,6 +104,9 @@ this variable to t."
   :type 'boolean
   :group 'geiser-chicken)
 
+(defvar geiser-chicken--required-modules
+  (list "chicken-doc" "apropos" "data-structures" "extras" "ports" "posix" "srfi-1" "srfi-13" "srfi-14" "srfi-18" "srfi-69" "tcp" "utils"))
+
 
 ;;; REPL support:
 
@@ -122,7 +125,9 @@ This function uses `geiser-chicken-init-file' if it exists."
     ,@n-flags "-include-path" ,(expand-file-name "chicken/" geiser-scheme-dir)
     ,@(apply 'append (mapcar (lambda (p) (list "-include-path" p))
                              geiser-chicken-load-path))
-    ,@(and init-file (file-readable-p init-file) (list init-file)))))
+    ,@(and init-file (file-readable-p init-file) (list init-file))
+    ,@(apply 'append (mapcar (lambda (m) (list "-R" m))
+			     geiser-chicken--required-modules)))))
 
 (defconst geiser-chicken--prompt-regexp "#[^;]*;[^:0-9]*:?[0-9]+> ")
 
