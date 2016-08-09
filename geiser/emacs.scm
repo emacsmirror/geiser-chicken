@@ -250,9 +250,9 @@
 		    (lambda (info)
 		      (string-has-prefix? (car info) prefix))
 		    (symbol-information-list))))
-	(if (and (null? found) (< 1 (string-length prefix)))
-	    (find-symbol-information* (substring/shared prefix 1) (string-append skipped (substring prefix 0 1)))
-	    (cons found skipped))))
+	;; (if (and (null? found) (< 1 (string-length prefix)))
+	;;     (find-symbol-information* (substring/shared prefix 1) (string-append skipped (substring prefix 0 1))))
+	(cons found skipped)))
     (memoize
      `(find-symbol-information ,prefix)
      (lambda ()
