@@ -79,11 +79,6 @@ started."
   :type '(repeat file)
   :group 'geiser-chicken)
 
-(geiser-custom--defcustom geiser-chicken-compile-geiser-p t
-  "Non-nil means that the Geiser runtime will be compiled on load."
-  :type 'boolean
-  :group 'geiser-chicken)
-
 (geiser-custom--defcustom geiser-chicken-init-file "~/.chicken-geiser"
   "Initialization file with user code for the Chicken REPL.
 If all you want is to load ~/.csirc, set
@@ -292,7 +287,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 
 (defun geiser-chicken--startup (remote)
   (compilation-setup t)
-  (geiser-chicken--compile-or-load (not geiser-chicken-compile-geiser-p)))
+  (geiser-chicken--compile-or-load t))
 
 
 ;;; Implementation definition:
