@@ -244,8 +244,9 @@
      '(symbol-information-list)
      (lambda ()
        (map (lambda (lst)
-	      (let-values (((name module) (remove-internal-name-mangling (car lst))))
-		(append (list name module) (cdr lst))))
+              (let* ((module (if (eq? (string->symbol "") (caar lst)) #f (symbol->string (caar lst))))
+                     (name (symbol->string (cdar lst))))
+                (append (list name module) (cdr lst))))
 	    (apropos-information-list "" #:macros? #t)))))
 
   (define (find-symbol-information prefix)
@@ -275,14 +276,6 @@
 	(set-file-position! (debug-log) 0 seek/end))
       (file-write (debug-log) (with-all-output-to-string (lambda () (write form) (newline))))
       (file-write (debug-log) "\n")))
-
-  (define (remove-internal-name-mangling sym)
-    (let* ((sym (symbol->string sym))
-	   (octothorpe-index (string-index-right sym #\#)))
-      (if octothorpe-index
-      	  (values (substring/shared sym (add1 octothorpe-index))
-      		  (substring/shared sym 0 octothorpe-index))
-      	  (values sym #f))))
 
   (define (string-has-prefix? s prefix)
     (cond
