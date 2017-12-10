@@ -279,19 +279,17 @@ This function uses `geiser-chicken-init-file' if it exists."
         (suppression-prefix
          "(define geiser-stdout (current-output-port))(current-output-port (make-output-port (lambda a #f) (lambda a #f)))")
         (suppression-postfix
-         "(current-output-port geiser-stdout)")
-	(match-limit-set
-	 (format "(geiser-chicken-symbol-match-limit %s)" geiser-chicken-match-limit)))
+         "(current-output-port geiser-stdout)"))
     (let ((load-sequence
            (cond
             (force-load
-             (format "(load \"%s\")\n(import geiser)%s\n" source match-limit-set))
+             (format "(load \"%s\")\n(import geiser)\n" source))
             ((file-exists-p target)
-             (format "%s(load \"%s\")(import geiser)%s%s\n"
-                     suppression-prefix target match-limit-set suppression-postfix))
+             (format "%s(load \"%s\")(import geiser)%s\n"
+                     suppression-prefix target suppression-postfix))
             (t
-             (format "%s(use utils)(compile-file \"%s\" options: '(\"-O3\" \"-s\") output-file: \"%s\" load: #t)(import geiser)%s%s\n"
-                     suppression-prefix source target match-limit-set suppression-postfix)))))
+             (format "%s(use utils)(compile-file \"%s\" options: '(\"-O3\" \"-s\") output-file: \"%s\" load: #t)(import geiser)%s\n"
+                     suppression-prefix source target suppression-postfix)))))
       (geiser-eval--send/wait load-sequence))))
 
 (defun geiser-chicken--startup (remote)
