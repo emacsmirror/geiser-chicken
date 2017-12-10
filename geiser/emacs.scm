@@ -28,8 +28,7 @@
    geiser-module-completions
    geiser-macroexpand
    geiser-chicken-use-debug-log
-   geiser-chicken-load-paths
-   geiser-chicken-symbol-match-limit)
+   geiser-chicken-load-paths)
 
   (import chicken scheme)
   (use
@@ -51,9 +50,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Symbol lists
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define geiser-chicken-symbol-match-limit
-    (make-parameter 20))
   
   (define geiser-r4rs-symbols
     (make-parameter
@@ -226,47 +222,33 @@
   (define (list-modules) (map car ##sys#module-table))
 
   (define memo (make-parameter (make-hash-table)))
+  (define symbol-memo (make-parameter (make-hash-table)))
   (define (clear-memo) (hash-table-clear! (memo)))
-  (define (memoize tag thunk)
-    (let ((table (memo)))
-      (if (hash-table-exists? table tag)
-	  (begin
-	    (write-to-log '[[Cache Hit]])
-	    (hash-table-ref table tag))
-	  (fluid-let ((memoize (lambda (tag thunk) (thunk))))
-	    (write-to-log '[[Cache Miss]])
-	    (hash-table-set! table tag (thunk))
-	    
-	    (hash-table-ref table tag)))))
-  
-  (define (symbol-information-list)
-    (memoize
-     '(symbol-information-list)
-     (lambda ()
-       (map (lambda (lst)
-              (let* ((module (if (eq? (string->symbol "") (caar lst)) #f (symbol->string (caar lst))))
-                     (name (symbol->string (cdar lst))))
-                (append (list name module) (cdr lst))))
-	    (apropos-information-list "" #:macros? #t)))))
+  (define (memoize/tbl table tag thunk)
+    (if (hash-table-exists? table tag)
+	(begin
+	  (write-to-log '[[Cache Hit]])
+	  (hash-table-ref table tag))
+	(fluid-let ((memoize/tbl (lambda (table tag thunk) (thunk))))
+	  (write-to-log '[[Cache Miss]])
+	  (hash-table-set! table tag (thunk))
+	  
+	  (hash-table-ref table tag))))
 
-  (define (find-symbol-information prefix)
-    (define (filter/limit pred? limit lst)
-      (cond
-       ((<= limit 0) '())
-       ((or (null? lst) (not (list? lst))) '())
-       ((pred? (car lst)) (cons (car lst) (filter/limit pred? (- limit 1) (cdr lst))))
-       (else (filter/limit pred? limit (cdr lst)))))
-    (define (find-symbol-information* prefix skipped)
-      (let ((found (filter/limit
-		    (lambda (info)
-		      (string-has-prefix? (car info) prefix))
-		    (geiser-chicken-symbol-match-limit)
-		    (symbol-information-list))))	
-	(cons found skipped)))
+  (define (memoize tag thunk)
+    (memoize/tbl (memo) tag thunk))
+
+  (define empty-symbol (string->symbol ""))
+
+  (define (symbol-information-list partial-string)
     (memoize
-     `(find-symbol-information ,prefix)
-     (lambda ()
-       (find-symbol-information* (->string prefix) ""))))
+     `(symbol-information-list ,partial-string)
+     (lambda ()       
+       (map (lambda (lst)
+	      (let* ((module (if (eq? empty-symbol (caar lst)) #f (caar lst)))
+		     (name (cdar lst)))
+		(append (list name module) (cdr lst))))
+	    (apropos-information-list partial-string #:macros? #t)))))
   
   (define debug-log (make-parameter #f))
   (define (write-to-log form)
@@ -397,42 +379,47 @@
            (any (cut eq? type <>) types)))
        (match-nodes sym)))))
 
-  (define (make-module-list sym module-sym prefix-exists)
+  (define (make-module-list sym module-sym)
     (append
-     (if prefix-exists '(fuzzy-match) '())
      (if (not module-sym)
 	 (find-standards-with-symbol sym)
 	 (cons module-sym (find-standards-with-symbol sym)))))
+
+  (define (read* str)
+    (with-input-from-string str (lambda () (read))))
   
-  (define (fmt node prefix)
+  (define (eval* str)
+    (cond
+     ((symbol? str) (eval str))
+     ((string? str) (eval (read* str)))
+     (else (eval* (->string str)))))
+  
+  (define (fmt node)
     (memoize
-     `(fmt ,node ,prefix)
+     `(fmt ,node)
      (lambda ()
-       (let* ((original-entry (string->symbol (car node)))
-	      (fuzzy-entry (string->symbol (string-append prefix (car node))))
-	      (prefix-exists (not (= 0 (string-length prefix))))
-	      (module (cadr node))
-	      (module (if module (string->symbol module) #f))
+       (let* ((mod (cadr node))
+	      (sym (car node))
 	      (rest (cddr node))
 	      (type (if (or (list? rest) (pair? rest)) (car rest) rest))
-	      (module-list (make-module-list fuzzy-entry module prefix-exists)))
+	      (mod-list (make-module-list sym mod)))
 	 (cond
 	  ((equal? 'macro type)
-	   `(,fuzzy-entry ("args" (("required" <macro>)
-				   ("optional" ...)
-				   ("key")))
-			  ("module" ,@module-list)))
+	   `(,sym ("args" (("required" <macro>)
+			   ("optional" ...)
+			   ("key")))
+	     ("module" ,@mod-list)))
 	  ((or (equal? 'variable type)
 	       (equal? 'constant type))
-	   (if (not module)
-	       `(,fuzzy-entry ("value" . ,(eval original-entry)))
+	   (if (not mod)
+	       `(,sym ("value" . ,(eval* sym)))
 	       (let* ((original-module (current-module))
-		      (desired-module (find-module module))
+		      (desired-module (find-module mod))
 		      (value (begin (switch-module desired-module)
-				    (eval original-entry))))
+				    (eval* sym))))
 		 (switch-module original-module)
-		 `(,fuzzy-entry ("value" . ,value)
-				("module" ,@module-list)))))
+		 `(,sym ("value" . ,value)
+			("module" ,@mod-list)))))
 	  (else
 	   (let ((reqs '())
 		 (opts '())
@@ -441,7 +428,7 @@
 
 	     (define (clean-arg arg)
 	       (let ((s (->string arg)))
-		 (string->symbol (substring/shared s 0 (add1 (string-skip-right s char-set:digit))))))
+		 (read* (substring/shared s 0 (add1 (string-skip-right s char-set:digit))))))
 
 	     (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
 	       (when (not (null? args))
@@ -467,20 +454,18 @@
 
 	     (collect-args args)
 
-	     `(,fuzzy-entry ("args" (("required" ,@reqs)
-				     ("optional" ,@opts)
-				     ("key" ,@keys)))
-			    ("module" ,@module-list)))))))))
+	     `(,sym ("args" (("required" ,@reqs)
+			     ("optional" ,@opts)
+			     ("key" ,@keys)))
+		    ("module" ,@mod-list)))))))))
 
   ;; Builds a signature list from an identifier
   (define (find-signatures sym)
     (memoize
      `(find-signatures ,sym)
      (lambda ()
-       (let ((result (find-symbol-information sym)))
-	 (map
-	  (cut fmt <> (cdr result))
-	  (car result))))))
+       (let ((result (symbol-information-list sym)))
+	 (map fmt result)))))
 
   ;; Builds the documentation from Chicken Doc for a specific symbol
   (define (make-doc symbol #!optional (filter-for-type #f))
@@ -597,12 +582,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (geiser-completions prefix . rest)
-    (let* ((result (find-symbol-information prefix))
-	   (prefix (cdr result))
-	   (result-list (car result)))
-      (map
-       (cut string-append prefix <>)
-       (map car result-list))))
+    (let ((prefix (->string prefix)))
+      (filter (cut string-has-prefix? <> prefix)
+	      (map ->string (map car (symbol-information-list prefix))))))
 
   (define (geiser-module-completions prefix . rest)
     (let ((prefix (->string prefix)))
@@ -613,8 +595,6 @@
      ((null? ids) '())
      ((not (list? ids))
       (geiser-autodoc (list ids)))
-     ((not (symbol? (car ids)))
-      (geiser-autodoc (cdr ids)))
      (else
       (let ((details (find-signatures (car ids))))
 	(if (null? details)
