@@ -221,34 +221,14 @@
   (define module-name ##sys#module-name)
   (define (list-modules) (map car ##sys#module-table))
 
-  (define memo (make-parameter (make-hash-table)))
-  (define symbol-memo (make-parameter (make-hash-table)))
-  (define (clear-memo) (hash-table-clear! (memo)))
-  (define (memoize/tbl table tag thunk)
-    (if (hash-table-exists? table tag)
-	(begin
-	  (write-to-log '[[Cache Hit]])
-	  (hash-table-ref table tag))
-	(fluid-let ((memoize/tbl (lambda (table tag thunk) (thunk))))
-	  (write-to-log '[[Cache Miss]])
-	  (hash-table-set! table tag (thunk))
-	  
-	  (hash-table-ref table tag))))
-
-  (define (memoize tag thunk)
-    (memoize/tbl (memo) tag thunk))
-
   (define empty-symbol (string->symbol ""))
 
   (define (symbol-information-list partial-string)
-    (memoize
-     `(symbol-information-list ,partial-string)
-     (lambda ()       
-       (map (lambda (lst)
-	      (let* ((module (if (eq? empty-symbol (caar lst)) #f (caar lst)))
-		     (name (cdar lst)))
-		(append (list name module) (cdr lst))))
-	    (apropos-information-list partial-string #:macros? #t)))))
+    (map (lambda (lst)
+	   (let* ((module (if (eq? empty-symbol (caar lst)) #f (caar lst)))
+		  (name (cdar lst)))
+	     (append (list name module) (cdr lst))))
+	 (apropos-information-list partial-string #:macros? #t)))
   
   (define debug-log (make-parameter #f))
   (define (write-to-log form)
@@ -395,77 +375,71 @@
      (else (eval* (->string str)))))
   
   (define (fmt node)
-    (memoize
-     `(fmt ,node)
-     (lambda ()
-       (let* ((mod (cadr node))
-	      (sym (car node))
-	      (rest (cddr node))
-	      (type (if (or (list? rest) (pair? rest)) (car rest) rest))
-	      (mod-list (make-module-list sym mod)))
-	 (cond
-	  ((equal? 'macro type)
-	   `(,sym ("args" (("required" <macro>)
-			   ("optional" ...)
-			   ("key")))
-	     ("module" ,@mod-list)))
-	  ((or (equal? 'variable type)
-	       (equal? 'constant type))
-	   (if (not mod)
-	       `(,sym ("value" . ,(eval* sym)))
-	       (let* ((original-module (current-module))
-		      (desired-module (find-module mod))
-		      (value (begin (switch-module desired-module)
-				    (eval* sym))))
-		 (switch-module original-module)
-		 `(,sym ("value" . ,value)
-			("module" ,@mod-list)))))
-	  (else
-	   (let ((reqs '())
-		 (opts '())
-		 (keys '())
-		 (args (if (or (list? rest) (pair? rest)) (cdr rest) '())))
+    (let* ((mod (cadr node))
+	   (sym (car node))
+	   (rest (cddr node))
+	   (type (if (or (list? rest) (pair? rest)) (car rest) rest))
+	   (mod-list (make-module-list sym mod)))
+      (cond
+       ((equal? 'macro type)
+	`(,sym ("args" (("required" <macro>)
+			("optional" ...)
+			("key")))
+	       ("module" ,@mod-list)))
+       ((or (equal? 'variable type)
+	    (equal? 'constant type))
+	(if (not mod)
+	    `(,sym ("value" . ,(eval* sym)))
+	    (let* ((original-module (current-module))
+		   (desired-module (find-module mod))
+		   (value (begin (switch-module desired-module)
+				 (eval* sym))))
+	      (switch-module original-module)
+	      `(,sym ("value" . ,value)
+		     ("module" ,@mod-list)))))
+       (else
+	(let ((reqs '())
+	      (opts '())
+	      (keys '())
+	      (args (if (or (list? rest) (pair? rest)) (cdr rest) '())))
 
-	     (define (clean-arg arg)
-	       (let ((s (->string arg)))
-		 (read* (substring/shared s 0 (add1 (string-skip-right s char-set:digit))))))
+	  (define (clean-arg arg)
+	    (let ((s (->string arg)))
+	      (read* (substring/shared s 0 (add1 (string-skip-right s char-set:digit))))))
 
-	     (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
-	       (when (not (null? args))
-		 (cond
-		  ((or (pair? args) (list? args))
-		   (cond
-		    ((eq? '#!key (car args))
-		     (collect-args (cdr args) reqs?: #f opts?: #f keys?: #t))
-		    ((eq? '#!optional (car args))
-		     (collect-args (cdr args) reqs?: #f opts?: #t keys?: #f))
-		    (else
-		     (begin
-		       (cond
-			(reqs?
-			 (set! reqs (append reqs (list (clean-arg (car args))))))
-			(opts?
-			 (set! opts (append opts (list (cons (clean-arg (caar args)) (cdar args))))))
-			(keys?
-			 (set! keys (append keys (list (cons (clean-arg (caar args)) (cdar args)))))))
-		       (collect-args (cdr args))))))
-		  (else
-		   (set! opts (list (clean-arg args) '...))))))
+	  (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
+	    (when (not (null? args))
+	      (cond
+	       ((or (pair? args) (list? args))
+		(cond
+		 ((eq? '#!key (car args))
+		  (collect-args (cdr args) reqs?: #f opts?: #f keys?: #t))
+		 ((eq? '#!optional (car args))
+		  (collect-args (cdr args) reqs?: #f opts?: #t keys?: #f))
+		 (else
+		  (begin
+		    (cond
+		     (reqs?
+		      (set! reqs (append reqs (list (clean-arg (car args))))))
+		     (opts?
+		      (set! opts (append opts (list (cons (clean-arg (caar args)) (cdar args))))))
+		     (keys?
+		      (set! keys (append keys (list (cons (clean-arg (caar args)) (cdar args)))))))
+		    (collect-args (cdr args))))))
+	       (else
+		(set! opts (list (clean-arg args) '...))))))
 
-	     (collect-args args)
+	  (collect-args args)
 
-	     `(,sym ("args" (("required" ,@reqs)
-			     ("optional" ,@opts)
-			     ("key" ,@keys)))
-		    ("module" ,@mod-list)))))))))
+	  `(,sym ("args" (("required" ,@reqs)
+			  ("optional" ,@opts)
+			  ("key" ,@keys)))
+		 ("module" ,@mod-list)))))))
 
   ;; Builds a signature list from an identifier
   (define (find-signatures sym)
-    (memoize
-     `(find-signatures ,sym)
-     (lambda ()
-       (let ((result (symbol-information-list sym)))
-	 (map fmt result)))))
+    (let ((result (symbol-information-list sym)))
+      (map fmt result)))
 
   ;; Builds the documentation from Chicken Doc for a specific symbol
   (define (make-doc symbol #!optional (filter-for-type #f))
@@ -488,29 +462,29 @@
 
   ;; Basically all non-core functions pass through geiser-eval
 
+  (define (form-has-safe-geiser? form)
+    (any (cut eq? (car form) <>)
+	 '(geiser-no-values geiser-newline geiser-completions
+	   geiser-autodoc geiser-object-signature geiser-symbol-location
+	   geiser-symbol-documentation geiser-module-exports
+	   geiser-module-path geiser-module-location
+	   geiser-module-completions geiser-chicken-use-debug-log)))
+    
+  (define (form-has-any-geiser? form)
+    (string-has-prefix? (->string (car form)) "geiser-"))
+
+  (define (form-defines-any-module? form)
+    (or
+     ;; Geiser seems to send buffers as (begin ..buffer contents..)
+     (and (eq? (car form) 'begin)
+	  (form-defines-any-module? (cadr form)))
+     (any (cut eq? (car form) <>)
+	  '(module define-library))))
+
+  (define (module-matches-defined-module? module)
+    (any (cut eq? module <>) (list-modules)))
+
   (define (geiser-eval module form . rest)
-    (define (form-has-safe-geiser? form)
-      (any (cut eq? (car form) <>)
-	   '(geiser-no-values geiser-newline geiser-completions
-	     geiser-autodoc geiser-object-signature geiser-symbol-location
-	     geiser-symbol-documentation geiser-module-exports
-	     geiser-module-path geiser-module-location
-	     geiser-module-completions geiser-chicken-use-debug-log)))
-    
-    (define (form-has-any-geiser? form)
-      (string-has-prefix? (->string (car form)) "geiser-"))
-
-    (define (form-defines-any-module? form)
-      (or
-       ;; Geiser seems to send buffers as (begin ..buffer contents..)
-       (and (eq? (car form) 'begin)
-	    (form-defines-any-module? (cadr form)))
-       (any (cut eq? (car form) <>)
-	    '(module define-library))))
-
-    (define (module-matches-defined-module? module)
-      (any (cut eq? module <>) (list-modules)))
-    
     (when (and module (not (symbol? module)))
       (error "Module should be a symbol"))
     
@@ -527,10 +501,8 @@
       (write-to-log form)
 
       (if is-safe-geiser?
-	  (call-with-result #f (lambda () (memoize form thunk)))
-	  (begin
-	    (clear-memo)
-	    (call-with-result host-module thunk)))))
+	  (call-with-result #f thunk)
+	  (call-with-result host-module thunk))))
 
   ;; Load a file
 
