@@ -109,12 +109,6 @@ this variable to t."
   :type 'integer
   :group 'geiser-chicken)
 
-(geiser-custom--defcustom geiser-chicken-required-modules
-    (list "chicken-doc" "apropos" "data-structures" "extras" "ports" "posix" "srfi-1" "srfi-13" "srfi-14" "srfi-18" "srfi-69" "tcp" "utils")
-  "Modules automatically loaded in the Chicken REPL."
-  :type '(repeat string)
-  :group 'geiser-chicken)
-
 
 ;;; REPL support:
 
@@ -133,9 +127,7 @@ This function uses `geiser-chicken-init-file' if it exists."
     ,@n-flags "-include-path" ,(expand-file-name "chicken/" geiser-scheme-dir)
     ,@(apply 'append (mapcar (lambda (p) (list "-include-path" p))
                              geiser-chicken-load-path))
-    ,@(and init-file (file-readable-p init-file) (list init-file))
-    ,@(apply 'append (mapcar (lambda (m) (list "-R" m))
-			     geiser-chicken-required-modules)))))
+    ,@(and init-file (file-readable-p init-file) (list init-file)))))
 
 (defconst geiser-chicken--prompt-regexp "#[^;]*;[^:0-9]*:?[0-9]+> ")
 
@@ -266,14 +258,17 @@ This function uses `geiser-chicken-init-file' if it exists."
 (defconst geiser-chicken-minimum-version "4.8.0.0")
 
 (defun geiser-chicken--version (binary)
-  (car (process-lines binary "-e" "(display (chicken-version))")))
+  (cadr
+   (split-string
+    (cadddr
+     (process-lines "csc" "-version")))))
 
 (defun connect-to-chicken ()
   "Start a Chicken REPL connected to a remote process."
   (interactive)
   (geiser-connect 'chicken))
 
-(defun geiser-chicken--compile-or-load (force-load)
+(defun geiser-chicken4--compile-or-load (force-load)
   (let ((target
          (expand-file-name "chicken/geiser/emacs.so" geiser-scheme-dir))
         (source
@@ -295,9 +290,20 @@ This function uses `geiser-chicken-init-file' if it exists."
                      suppression-prefix source target suppression-postfix)))))
       (geiser-eval--send/wait load-sequence))))
 
+(defun geiser-chicken5-load ()
+  (let ((source (expand-file-name "chicken/geiser/chicken5.scm" geiser-scheme-dir))
+	(suppression-prefix
+         "(define geiser-stdout (current-output-port))(current-output-port (make-output-port (lambda a #f) (lambda a #f)))")
+        (suppression-postfix
+         "(current-output-port geiser-stdout)"))
+    (geiser-eval--send/wait (format "%s (load \"%s\") (import geiser) %s" suppression-prefix source suppression-postfix))))
+
 (defun geiser-chicken--startup (remote)
   (compilation-setup t)
-  (geiser-chicken--compile-or-load t))
+  (cond
+   ((version< (geiser-chicken--version nil) "5.0.0")
+    (geiser-chicken4--compile-or-load t))
+   (t (geiser-chicken5-load))))
 
 
 ;;; Implementation definition:
