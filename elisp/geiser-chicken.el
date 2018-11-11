@@ -258,10 +258,10 @@ This function uses `geiser-chicken-init-file' if it exists."
 (defconst geiser-chicken-minimum-version "4.8.0.0")
 
 (defun geiser-chicken--version (binary)
-  (cadr
-   (split-string
-    (cadddr
-     (process-lines "csc" "-version")))))
+  (cadar
+   (seq-filter #'(lambda (l) (equalp "Version" (car l)))
+	       (mapcar #'split-string 
+		       (process-lines binary "-version")))))
 
 (defun connect-to-chicken ()
   "Start a Chicken REPL connected to a remote process."
@@ -301,7 +301,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 (defun geiser-chicken--startup (remote)
   (compilation-setup t)
   (cond
-   ((version< (geiser-chicken--version nil) "5.0.0")
+   ((version< (geiser-chicken--version geiser-chicken-binary) "5.0.0")
     (geiser-chicken4--compile-or-load t))
    (t (geiser-chicken5-load))))
 
