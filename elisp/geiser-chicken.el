@@ -270,9 +270,9 @@ This function uses `geiser-chicken-init-file' if it exists."
 
 (defun geiser-chicken4--compile-or-load (force-load)
   (let ((target
-         (expand-file-name "chicken/geiser/emacs.so" geiser-scheme-dir))
+         (expand-file-name "chicken/geiser/chicken4.so" geiser-scheme-dir))
         (source
-         (expand-file-name "chicken/geiser/emacs.scm" geiser-scheme-dir))
+         (expand-file-name "chicken/geiser/chicken4.scm" geiser-scheme-dir))
         (force-load (or force-load (eq system-type 'windows-nt)))
         (suppression-prefix
          "(define geiser-stdout (current-output-port))(current-output-port (make-output-port (lambda a #f) (lambda a #f)))")
