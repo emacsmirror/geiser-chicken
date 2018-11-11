@@ -111,7 +111,7 @@
     (if val (func val) #f))
 
   ;; Wraps output from geiser functions
-  (define (call-with-result module thunk)
+  (define (call-with-result thunk)
     (let* ((result (if #f #f))
            (output (if #f #f)))
 
@@ -209,52 +209,21 @@
 ;; Geiser core functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; Basically all non-core functions pass through geiser-eval
-
-  (define (form-has-safe-geiser? form)
-    (any (cut eq? (car form) <>)
-	 '(geiser-no-values geiser-newline geiser-completions
-	   geiser-autodoc geiser-object-signature geiser-symbol-location
-	   geiser-symbol-documentation geiser-module-exports
-	   geiser-module-path geiser-module-location
-	   geiser-module-completions geiser-chicken-use-debug-log)))
-    
-  (define (form-has-any-geiser? form)
-    (string-has-prefix? (->string (car form)) "geiser-"))
-
-  (define (form-defines-any-module? form)
-    (or
-     ;; Geiser seems to send buffers as (begin ..buffer contents..)
-     (and (eq? (car form) 'begin)
-	  (form-defines-any-module? (cadr form)))
-     (any (cut eq? (car form) <>)
-	  '(module define-library))))
-
   (define (geiser-eval module form . rest)
     (when (and module (not (symbol? module)))
       (error "Module should be a symbol"))
     
     ;; All calls start at toplevel
-    (let* ((is-safe-geiser? (form-has-safe-geiser? form))
-	   (host-module (and (not is-safe-geiser?)
-			     (not (form-has-any-geiser? form))
-			     (not (form-defines-any-module? form))
-			     module))
-	   (thunk (lambda () (eval form))))
-
-      (write-to-log `[[REQUEST host-module: ,host-module]])
+    (let* ((thunk (lambda () (eval form))))
       (write-to-log form)
-
-      (if is-safe-geiser?
-	  (call-with-result #f thunk)
-	  (call-with-result host-module thunk))))
+      (call-with-result thunk)))
 
   ;; Load a file
 
   (define (geiser-load-file file)
     (let* ((file (if (symbol? file) (symbol->string file) file))
            (found-file (geiser-find-file file)))
-      (call-with-result #f
+      (call-with-result
        (lambda ()
          (when found-file
            (load found-file))))))
@@ -355,7 +324,7 @@
            (directory (if (not (equal? #\/ (string-ref directory (- (string-length directory)))))
                           (string-append directory "/")
                           directory)))
-      (call-with-result #f
+      (call-with-result
        (lambda ()
          (when (directory-exists? directory)
            (geiser-chicken-load-paths (cons directory (geiser-chicken-load-paths))))))))
