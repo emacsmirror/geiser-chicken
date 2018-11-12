@@ -140,15 +140,13 @@
         (write-to-log out-form))
 
       (newline)))
-
-  (define (read* str)
-    (with-input-from-string str (lambda () (read))))
   
   (define (eval* str)
-    (cond
-     ((symbol? str) (eval str))
-     ((string? str) (eval (read* str)))
-     (else #f)))
+    (handle-exceptions exn #f 
+      (with-all-output-to-string
+       (eval
+	(with-input-from-string (->string str)
+	  (lambda () (read)))))))
   
   (define (fmt node)
     (let* ((mod (cadr node))
@@ -160,7 +158,9 @@
 	`(,sym ("args" (("required" <macro>)
 			("optional" ...)
 			("key")))
-	       ("module")))
+	       ,(if (and mod)
+		    (cons "module" mod)
+		    (list "module"))))
        ((or (equal? 'variable type)
 	    (equal? 'constant type))
 	`(,sym ("value" . ,(eval* sym))))
@@ -197,7 +197,9 @@
 	  `(,sym ("args" (("required" ,@reqs)
 			  ("optional" ,@opts)
 			  ("key" ,@keys)))
-		 ("module")))))))
+		 ,(if (and mod)
+		      (cons "module" mod)
+		      (list "module"))))))))
 
   ;; Builds a signature list from an identifier
   (define (find-signatures sym)
@@ -277,14 +279,13 @@
   
   (define (geiser-autodoc ids . rest)
     (cond
-     ((null? ids) '())
-     ((not (list? ids))
-      (geiser-autodoc (list ids)))
-     (else 
-      (let ((details (find-signatures (car ids))))
-	(if (null? details)
-	    (geiser-autodoc (cdr ids))
-	    details)))))
+     ((null? ids) #f)
+     ((symbol? ids)
+      (find-signatures ids))
+     ((list? ids)
+      (let ((first (find-signatures (car ids))))
+	(if first first (geiser-autodoc (cdr ids)))))
+     (else #f)))
   
   (define (geiser-object-signature name object . rest)
     (let* ((sig (geiser-autodoc `(,name))))
