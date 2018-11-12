@@ -202,7 +202,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 ;;; Trying to ascertain whether a buffer is Chicken Scheme:
 
 (defconst geiser-chicken--guess-re
-  (regexp-opt (append '("csi" "chicken") geiser-chicken-builtin-keywords)))
+  (regexp-opt '("csi" "chicken" "csc")))
 
 (defun geiser-chicken--guess ()
   (save-excursion
