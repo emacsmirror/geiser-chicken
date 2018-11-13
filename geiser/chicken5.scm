@@ -142,11 +142,18 @@
       (newline)))
   
   (define (eval* str)
-    (handle-exceptions exn #f 
-      (with-all-output-to-string
-       (eval
-	(with-input-from-string (->string str)
-	  (lambda () (read)))))))
+    (cond
+     ((string? str)
+      (handle-exceptions exn
+	  (with-all-output-to-string (write-exception exn))
+	(eval
+	 (with-input-from-string str
+	   (lambda () (read))))))
+     ((symbol? str)
+      (handle-exceptions exn
+	  (with-all-output-to-string (write-exception exn))
+	(eval str)))
+     (else (eval* (->string str)))))
   
   (define (fmt node)
     (let* ((mod (cadr node))
