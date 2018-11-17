@@ -259,7 +259,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 
 (defun geiser-chicken--version (binary)
   (cadar
-   (seq-filter #'(lambda (l) (equalp "Version" (car l)))
+   (seq-filter #'(lambda (l) (string-equal "Version" (car l)))
 	       (mapcar #'split-string 
 		       (process-lines binary "-version")))))
 
