@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2014, 2015 Daniel Leslie
 
-;; Based on geiser-guile.el by Jose Antonio Ortego Ruize
+;; Based on geiser-guile.el by Jose Antonio Ortega Ruiz
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the Modified BSD License. You should
