@@ -1,6 +1,6 @@
 ;; geiser-chicken.el -- chicken's implementation of the geiser protocols
 
-;; Copyright (C) 2014, 2015 Daniel Leslie
+;; Copyright (C) 2014, 2015, 2019 Daniel Leslie
 
 ;; Based on geiser-guile.el by Jose Antonio Ortega Ruiz
 
@@ -265,7 +265,7 @@ This function uses `geiser-chicken-init-file' if it exists."
                            (eval `(begin (import chicken.platform) \
                                          (chicken-version)))) \
                          (chicken-version)))'"
-           binary)))
+           (if (listp binary) (car binary) binary))))
 
 (defun connect-to-chicken ()
   "Start a Chicken REPL connected to a remote process."
