@@ -276,10 +276,21 @@
 ;; Completions, Autodoc and Signature
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define (current-environment-completions prefix)
+    (let ((size (string-length prefix)))
+      (filter
+       (lambda (candidate) (substring=? prefix candidate 0 0 size))
+       (map (o symbol->string car) (##sys#current-environment)))))
+
+  (define (apropos-completions prefix)
+    (let ((candidates (apropos-list `(: bos ,prefix) #:macros? #t)))
+      (remove
+       (lambda (candidate) (substring-index "#" candidate))
+       (map symbol->string candidates))))
+
   (define (geiser-completions prefix . rest)
-    (let ((prefix (->string prefix)))
-      (filter (cut string-has-prefix? <> prefix)
-	      (map ->string (map car (symbol-information-list prefix))))))
+    (append (apropos-completions prefix)
+            (current-environment-completions prefix)))
 
   (define (geiser-module-completions prefix . rest)
     '())
