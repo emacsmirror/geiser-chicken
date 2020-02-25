@@ -11,6 +11,8 @@
 
 ;; Start date: Sun Mar 08, 2009 23:03
 
+
+;;; Code:
 
 (require 'geiser-connection)
 (require 'geiser-syntax)
