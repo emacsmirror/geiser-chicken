@@ -8,27 +8,27 @@
 ;; not, see <http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5>.
 
 (module geiser
-  (geiser-eval
-   geiser-no-values
-   geiser-newline
-   geiser-start-server
-   geiser-completions
-   geiser-autodoc
-   geiser-object-signature
-   geiser-symbol-location
-   geiser-symbol-documentation
-   geiser-find-file
-   geiser-add-to-load-path
-   geiser-load-file
-   geiser-compile-file
-   geiser-compile
-   geiser-module-exports
-   geiser-module-path
-   geiser-module-location
-   geiser-module-completions
-   geiser-macroexpand
-   geiser-chicken-use-debug-log
-   geiser-chicken-load-paths)
+    (geiser-eval
+     geiser-no-values
+     geiser-newline
+     geiser-start-server
+     geiser-completions
+     geiser-autodoc
+     geiser-object-signature
+     geiser-symbol-location
+     geiser-symbol-documentation
+     geiser-find-file
+     geiser-add-to-load-path
+     geiser-load-file
+     geiser-compile-file
+     geiser-compile
+     geiser-module-exports
+     geiser-module-path
+     geiser-module-location
+     geiser-module-completions
+     geiser-macroexpand
+     geiser-chicken-use-debug-log
+     geiser-chicken-load-paths)
 
   (import chicken scheme)
   (use
@@ -171,43 +171,43 @@
   (define geiser-chicken-crunch-symbols
     (make-parameter
      '(* + - / < <= = > >= abs acos add1 argc argv-ref arithmetic-shift asin
-	 atan atan2 bitwise-and bitwise-ior bitwise-not bitwise-xor
-	 blob->f32vector blob->f32vector/shared blob->f64vector
-	 blob->f64vector/shared blob->s16vector blob->s16vector/shared
-	 blob->s32vector blob->s32vector/shared blob->s8vector
-	 blob->s8vector/shared blob->string blob->string/shared blob->u16vector
-	 blob->u16vector/shared blob->u32vector blob->u32vector/shared
-	 blob->u8vector blob->u8vector/shared ceiling char->integer
-	 char-alphabetic? char-ci<=? char-ci<? char-ci=? char-ci>=? char-ci>?
-	 char-downcase char-lower-case? char-numeric? char-upcase
-	 char-upper-case? char-whitespace? char<=? char<? char=? char>=? char>?
-	 cond-expand cos display display eq? equal? eqv? error even?
-	 exact->inexact exact? exit exp expt f32vector->blob
-	 f32vector->blob/shared f32vector-length f32vector-ref f32vector-set!
-	 f64vector->blob f64vector->blob/shared f64vector-length f64vector-ref
-	 f64vector-set! floor flush-output inexact->exact inexact?
-	 integer->char integer? log make-f32vector make-f64vector make-s16vector
-	 make-s32vector make-s8vector make-string make-u16vector make-u32vector
-	 make-u8vector max min modulo negative? newline not number->string odd?
-	 pointer-f32-ref pointer-f32-set! pointer-f64-ref pointer-f64-set!
-	 pointer-s16-ref pointer-s16-set! pointer-s32-ref pointer-s32-set!
-	 pointer-s8-ref pointer-s8-set! pointer-u16-ref pointer-u16-set!
-	 pointer-u32-ref pointer-u32-set! pointer-u8-ref pointer-u8-set!
-	 positive? quotient rec remainder round s16vector->blob
-	 s16vector->blob/shared s16vector-length s16vector-ref s16vector-set!
-	 s32vector->blob s32vector->blob/shared s32vector-length s32vector-ref
-	 s32vector-set! s8vector->blob s8vector->blob/shared s8vector-length
-	 s8vector-ref s8vector-set! sin sqrt string->blob string->blob/shared
-	 string->number string-append string-ci<=? string-ci<? string-ci=?
-	 string-ci>=? string-ci>? string-copy string-fill! string-length
-	 string-ref string-set! string<=? string<? string=? string>=? string>?
-	 sub1 subf32vector subf64vector subs16vector subs32vector subs8vector
-	 substring subu16vector subu32vector subu8vector switch tan truncate
-	 u16vector->blob u16vector->blob/shared u16vector-length u16vector-ref
-	 u16vector-set! u32vector->blob u32vector->blob/shared u32vector-length
-	 u32vector-ref u32vector-set! u8vector->blob u8vector->blob/shared
-	 u8vector-length u8vector-ref u8vector-set! unless void when write-char
-	 zero?)))
+         atan atan2 bitwise-and bitwise-ior bitwise-not bitwise-xor
+         blob->f32vector blob->f32vector/shared blob->f64vector
+         blob->f64vector/shared blob->s16vector blob->s16vector/shared
+         blob->s32vector blob->s32vector/shared blob->s8vector
+         blob->s8vector/shared blob->string blob->string/shared blob->u16vector
+         blob->u16vector/shared blob->u32vector blob->u32vector/shared
+         blob->u8vector blob->u8vector/shared ceiling char->integer
+         char-alphabetic? char-ci<=? char-ci<? char-ci=? char-ci>=? char-ci>?
+         char-downcase char-lower-case? char-numeric? char-upcase
+         char-upper-case? char-whitespace? char<=? char<? char=? char>=? char>?
+         cond-expand cos display display eq? equal? eqv? error even?
+         exact->inexact exact? exit exp expt f32vector->blob
+         f32vector->blob/shared f32vector-length f32vector-ref f32vector-set!
+         f64vector->blob f64vector->blob/shared f64vector-length f64vector-ref
+         f64vector-set! floor flush-output inexact->exact inexact?
+         integer->char integer? log make-f32vector make-f64vector make-s16vector
+         make-s32vector make-s8vector make-string make-u16vector make-u32vector
+         make-u8vector max min modulo negative? newline not number->string odd?
+         pointer-f32-ref pointer-f32-set! pointer-f64-ref pointer-f64-set!
+         pointer-s16-ref pointer-s16-set! pointer-s32-ref pointer-s32-set!
+         pointer-s8-ref pointer-s8-set! pointer-u16-ref pointer-u16-set!
+         pointer-u32-ref pointer-u32-set! pointer-u8-ref pointer-u8-set!
+         positive? quotient rec remainder round s16vector->blob
+         s16vector->blob/shared s16vector-length s16vector-ref s16vector-set!
+         s32vector->blob s32vector->blob/shared s32vector-length s32vector-ref
+         s32vector-set! s8vector->blob s8vector->blob/shared s8vector-length
+         s8vector-ref s8vector-set! sin sqrt string->blob string->blob/shared
+         string->number string-append string-ci<=? string-ci<? string-ci=?
+         string-ci>=? string-ci>? string-copy string-fill! string-length
+         string-ref string-set! string<=? string<? string=? string>=? string>?
+         sub1 subf32vector subf64vector subs16vector subs32vector subs8vector
+         substring subu16vector subu32vector subu8vector switch tan truncate
+         u16vector->blob u16vector->blob/shared u16vector-length u16vector-ref
+         u16vector-set! u32vector->blob u32vector->blob/shared u32vector-length
+         u32vector-ref u32vector-set! u8vector->blob u8vector->blob/shared
+         u8vector-length u8vector-ref u8vector-set! unless void when write-char
+         zero?)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Utilities
@@ -225,17 +225,17 @@
 
   (define (symbol-information-list partial-string)
     (map (lambda (lst)
-	   (let* ((module (if (eq? empty-symbol (caar lst)) #f (caar lst)))
-		  (name (cdar lst)))
-	     (append (list name module) (cdr lst))))
-	 (apropos-information-list partial-string #:macros? #t)))
+           (let* ((module (if (eq? empty-symbol (caar lst)) #f (caar lst)))
+                  (name (cdar lst)))
+             (append (list name module) (cdr lst))))
+         (apropos-information-list partial-string #:macros? #t)))
   
   (define debug-log (make-parameter #f))
   (define (write-to-log form)
     (when (geiser-chicken-use-debug-log)
       (when (not (debug-log))
-	(debug-log (file-open "geiser.log" (+ open/wronly open/append open/text open/creat)))
-	(set-file-position! (debug-log) 0 seek/end))
+        (debug-log (file-open "geiser.log" (+ open/wronly open/append open/text open/creat)))
+        (set-file-position! (debug-log) 0 seek/end))
       (file-write (debug-log) (with-all-output-to-string (lambda () (write form) (newline))))
       (file-write (debug-log) "\n")))
 
@@ -309,7 +309,7 @@
              `((result ,@result)
                (output . ,output))))
         (write out-form)
-	(write-to-log '[[RESPONSE]])
+        (write-to-log '[[RESPONSE]])
         (write-to-log out-form))
 
       (newline)))
@@ -329,8 +329,8 @@
          '(chicken)
          '())
      (if (any (cut eq? <> sym) (geiser-chicken-crunch-symbols))
-	 '(crunch)
-	 '())))
+         '(crunch)
+         '())))
 
   ;; Locates any paths at which a particular symbol might be located
   (define (find-library-paths sym types)
@@ -362,8 +362,8 @@
   (define (make-module-list sym module-sym)
     (append
      (if (not module-sym)
-	 (find-standards-with-symbol sym)
-	 (cons module-sym (find-standards-with-symbol sym)))))
+         (find-standards-with-symbol sym)
+         (cons module-sym (find-standards-with-symbol sym)))))
 
   (define (read* str)
     (with-input-from-string str (lambda () (read))))
@@ -376,65 +376,65 @@
   
   (define (fmt node)
     (let* ((mod (cadr node))
-	   (sym (car node))
-	   (rest (cddr node))
-	   (type (if (or (list? rest) (pair? rest)) (car rest) rest))
-	   (mod-list (make-module-list sym mod)))
+           (sym (car node))
+           (rest (cddr node))
+           (type (if (or (list? rest) (pair? rest)) (car rest) rest))
+           (mod-list (make-module-list sym mod)))
       (cond
        ((equal? 'macro type)
-	`(,sym ("args" (("required" <macro>)
-			("optional" ...)
-			("key")))
-	       ("module" ,@mod-list)))
+        `(,sym ("args" (("required" <macro>)
+                        ("optional" ...)
+                        ("key")))
+               ("module" ,@mod-list)))
        ((or (equal? 'variable type)
-	    (equal? 'constant type))
-	(if (not mod)
-	    `(,sym ("value" . ,(eval* sym)))
-	    (let* ((original-module (current-module))
-		   (desired-module (find-module mod))
-		   (value (begin (switch-module desired-module)
-				 (eval* sym))))
-	      (switch-module original-module)
-	      `(,sym ("value" . ,value)
-		     ("module" ,@mod-list)))))
+            (equal? 'constant type))
+        (if (not mod)
+            `(,sym ("value" . ,(eval* sym)))
+            (let* ((original-module (current-module))
+                   (desired-module (find-module mod))
+                   (value (begin (switch-module desired-module)
+                                 (eval* sym))))
+              (switch-module original-module)
+              `(,sym ("value" . ,value)
+                     ("module" ,@mod-list)))))
        (else
-	(let ((reqs '())
-	      (opts '())
-	      (keys '())
-	      (args (if (or (list? rest) (pair? rest)) (cdr rest) '())))
+        (let ((reqs '())
+              (opts '())
+              (keys '())
+              (args (if (or (list? rest) (pair? rest)) (cdr rest) '())))
 
-	  (define (clean-arg arg)
-	    (let ((s (->string arg)))
-	      (read* (substring/shared s 0 (add1 (string-skip-right s char-set:digit))))))
+          (define (clean-arg arg)
+            (let ((s (->string arg)))
+              (read* (substring/shared s 0 (add1 (string-skip-right s char-set:digit))))))
 
-	  (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
-	    (when (not (null? args))
-	      (cond
-	       ((or (pair? args) (list? args))
-		(cond
-		 ((eq? '#!key (car args))
-		  (collect-args (cdr args) reqs?: #f opts?: #f keys?: #t))
-		 ((eq? '#!optional (car args))
-		  (collect-args (cdr args) reqs?: #f opts?: #t keys?: #f))
-		 (else
-		  (begin
-		    (cond
-		     (reqs?
-		      (set! reqs (append reqs (list (clean-arg (car args))))))
-		     (opts?
-		      (set! opts (append opts (list (cons (clean-arg (caar args)) (cdar args))))))
-		     (keys?
-		      (set! keys (append keys (list (cons (clean-arg (caar args)) (cdar args)))))))
-		    (collect-args (cdr args))))))
-	       (else
-		(set! opts (list (clean-arg args) '...))))))
+          (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
+            (when (not (null? args))
+              (cond
+               ((or (pair? args) (list? args))
+                (cond
+                 ((eq? '#!key (car args))
+                  (collect-args (cdr args) reqs?: #f opts?: #f keys?: #t))
+                 ((eq? '#!optional (car args))
+                  (collect-args (cdr args) reqs?: #f opts?: #t keys?: #f))
+                 (else
+                  (begin
+                    (cond
+                     (reqs?
+                      (set! reqs (append reqs (list (clean-arg (car args))))))
+                     (opts?
+                      (set! opts (append opts (list (cons (clean-arg (caar args)) (cdar args))))))
+                     (keys?
+                      (set! keys (append keys (list (cons (clean-arg (caar args)) (cdar args)))))))
+                    (collect-args (cdr args))))))
+               (else
+                (set! opts (list (clean-arg args) '...))))))
 
-	  (collect-args args)
+          (collect-args args)
 
-	  `(,sym ("args" (("required" ,@reqs)
-			  ("optional" ,@opts)
-			  ("key" ,@keys)))
-		 ("module" ,@mod-list)))))))
+          `(,sym ("args" (("required" ,@reqs)
+                          ("optional" ,@opts)
+                          ("key" ,@keys)))
+                 ("module" ,@mod-list)))))))
 
   ;; Builds a signature list from an identifier
   (define (find-signatures sym)
@@ -464,11 +464,11 @@
 
   (define (form-has-safe-geiser? form)
     (any (cut eq? (car form) <>)
-	 '(geiser-no-values geiser-newline geiser-completions
-	   geiser-autodoc geiser-object-signature geiser-symbol-location
-	   geiser-symbol-documentation geiser-module-exports
-	   geiser-module-path geiser-module-location
-	   geiser-module-completions geiser-chicken-use-debug-log)))
+         '(geiser-no-values geiser-newline geiser-completions
+           geiser-autodoc geiser-object-signature geiser-symbol-location
+           geiser-symbol-documentation geiser-module-exports
+           geiser-module-path geiser-module-location
+           geiser-module-completions geiser-chicken-use-debug-log)))
     
   (define (form-has-any-geiser? form)
     (string-has-prefix? (->string (car form)) "geiser-"))
@@ -477,9 +477,9 @@
     (or
      ;; Geiser seems to send buffers as (begin ..buffer contents..)
      (and (eq? (car form) 'begin)
-	  (form-defines-any-module? (cadr form)))
+          (form-defines-any-module? (cadr form)))
      (any (cut eq? (car form) <>)
-	  '(module define-library))))
+          '(module define-library))))
 
   (define (module-matches-defined-module? module)
     (any (cut eq? module <>) (list-modules)))
@@ -490,19 +490,19 @@
     
     ;; All calls start at toplevel
     (let* ((is-safe-geiser? (form-has-safe-geiser? form))
-	   (host-module (and (not is-safe-geiser?)
-			     (not (form-has-any-geiser? form))
-			     (not (form-defines-any-module? form))
-			     (module-matches-defined-module? module)
+           (host-module (and (not is-safe-geiser?)
+                             (not (form-has-any-geiser? form))
+                             (not (form-defines-any-module? form))
+                             (module-matches-defined-module? module)
                              module))
-	   (thunk (lambda () (eval form))))
+           (thunk (lambda () (eval form))))
 
       (write-to-log `[[REQUEST host-module: ,host-module]])
       (write-to-log form)
 
       (if is-safe-geiser?
-	  (call-with-result #f thunk)
-	  (call-with-result host-module thunk))))
+          (call-with-result #f thunk)
+          (call-with-result host-module thunk))))
 
   ;; Load a file
 
@@ -556,7 +556,7 @@
   (define (geiser-completions prefix . rest)
     (let ((prefix (->string prefix)))
       (filter (cut string-has-prefix? <> prefix)
-	      (map ->string (map car (symbol-information-list prefix))))))
+              (map ->string (map car (symbol-information-list prefix))))))
 
   (define (geiser-module-completions prefix . rest)
     (let ((prefix (->string prefix)))
@@ -569,9 +569,9 @@
       (geiser-autodoc (list ids)))
      (else
       (let ((details (find-signatures (car ids))))
-	(if (null? details)
-	    (geiser-autodoc (cdr ids))
-	    details)))))
+        (if (null? details)
+            (geiser-autodoc (cdr ids))
+            details)))))
   
   (define (geiser-object-signature name object . rest)
     (let* ((sig (geiser-autodoc `(,name))))
@@ -596,13 +596,13 @@
   (define (geiser-find-file file . rest)
     (when file
       (let ((paths (geiser-chicken-load-paths)))
-	(define (try-find file paths)
-	  (cond
-	   ((null? paths) #f)
-	   ((file-exists? (string-append (car paths) file))
-	    (string-append (car paths) file))
-	   (else (try-find file (cdr paths)))))
-	(try-find file paths))))
+        (define (try-find file paths)
+          (cond
+           ((null? paths) #f)
+           ((file-exists? (string-append (car paths) file))
+            (string-append (car paths) file))
+           (else (try-find file (cdr paths)))))
+        (try-find file paths))))
 
   (define (geiser-add-to-load-path directory . rest)
     (let* ((directory (if (symbol? directory)

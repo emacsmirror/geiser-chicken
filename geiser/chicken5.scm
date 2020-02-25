@@ -8,27 +8,27 @@
 ;; not, see <http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5>.
 
 (module geiser
-  (geiser-eval
-   geiser-no-values
-   geiser-newline
-   geiser-start-server
-   geiser-completions
-   geiser-autodoc
-   geiser-object-signature
-   geiser-symbol-location
-   geiser-symbol-documentation
-   geiser-find-file
-   geiser-add-to-load-path
-   geiser-load-file
-   geiser-compile-file
-   geiser-compile
-   geiser-module-exports
-   geiser-module-path
-   geiser-module-location
-   geiser-module-completions
-   geiser-macroexpand
-   geiser-chicken-use-debug-log
-   geiser-chicken-load-paths)
+    (geiser-eval
+     geiser-no-values
+     geiser-newline
+     geiser-start-server
+     geiser-completions
+     geiser-autodoc
+     geiser-object-signature
+     geiser-symbol-location
+     geiser-symbol-documentation
+     geiser-find-file
+     geiser-add-to-load-path
+     geiser-load-file
+     geiser-compile-file
+     geiser-compile
+     geiser-module-exports
+     geiser-module-path
+     geiser-module-location
+     geiser-module-completions
+     geiser-macroexpand
+     geiser-chicken-use-debug-log
+     geiser-chicken-load-paths)
 
   (import
     scheme
@@ -57,17 +57,17 @@
 
   (define (symbol-information-list partial-string)
     (map (lambda (lst)
-	   (let* ((module (if (eq? empty-symbol (caar lst)) #f (caar lst)))
-		  (name (cdar lst)))
-	     (append (list name module) (cdr lst))))
-	 (apropos-information-list partial-string #:macros? #t)))
+           (let* ((module (if (eq? empty-symbol (caar lst)) #f (caar lst)))
+                  (name (cdar lst)))
+             (append (list name module) (cdr lst))))
+         (apropos-information-list partial-string #:macros? #t)))
   
   (define debug-log (make-parameter #f))
   (define (write-to-log form)
     (when (geiser-chicken-use-debug-log)
       (when (not (debug-log))
-	(debug-log (file-open "geiser.log" (+ open/wronly open/append open/text open/creat)))
-	(set-file-position! (debug-log) 0 seek/end))
+        (debug-log (file-open "geiser.log" (+ open/wronly open/append open/text open/creat)))
+        (set-file-position! (debug-log) 0 seek/end))
       (file-write (debug-log) (with-all-output-to-string (lambda () (write form) (newline))))
       (file-write (debug-log) "\n")))
 
@@ -116,12 +116,12 @@
            (output (if #f #f)))
 
       (set! output
-            (handle-exceptions exn
-             (with-all-output-to-string
-              (lambda () (write-exception exn)))
-             (with-all-output-to-string
-              (lambda ()
-                (call-with-values thunk (lambda v (set! result v)))))))
+        (handle-exceptions exn
+            (with-all-output-to-string
+             (lambda () (write-exception exn)))
+          (with-all-output-to-string
+           (lambda ()
+             (call-with-values thunk (lambda v (set! result v)))))))
 
       (set! result
         (cond
@@ -136,7 +136,7 @@
              `((result ,@result)
                (output . ,output))))
         (write out-form)
-	(write-to-log '[[RESPONSE]])
+        (write-to-log '[[RESPONSE]])
         (write-to-log out-form))
 
       (newline)))
@@ -145,68 +145,68 @@
     (cond
      ((string? str)
       (handle-exceptions exn
-	  (with-all-output-to-string (write-exception exn))
-	(eval
-	 (with-input-from-string str
-	   (lambda () (read))))))
+          (with-all-output-to-string (write-exception exn))
+        (eval
+         (with-input-from-string str
+           (lambda () (read))))))
      ((symbol? str)
       (handle-exceptions exn
-	  (with-all-output-to-string (write-exception exn))
-	(eval str)))
+          (with-all-output-to-string (write-exception exn))
+        (eval str)))
      (else (eval* (->string str)))))
   
   (define (fmt node)
     (let* ((mod (cadr node))
-	   (sym (car node))
-	   (rest (cddr node))
-	   (type (if (or (list? rest) (pair? rest)) (car rest) rest)))
+           (sym (car node))
+           (rest (cddr node))
+           (type (if (or (list? rest) (pair? rest)) (car rest) rest)))
       (cond
        ((equal? 'macro type)
-	`(,sym ("args" (("required" <macro>)
-			("optional" ...)
-			("key")))
-	       ,(if (and mod)
-		    (cons "module" mod)
-		    (list "module"))))
+        `(,sym ("args" (("required" <macro>)
+                        ("optional" ...)
+                        ("key")))
+               ,(if (and mod)
+                    (cons "module" mod)
+                    (list "module"))))
        ((or (equal? 'variable type)
-	    (equal? 'constant type))
-	`(,sym ("value" . ,(eval* sym))))
+            (equal? 'constant type))
+        `(,sym ("value" . ,(eval* sym))))
        (else
-	(let ((reqs '())
-	      (opts '())
-	      (keys '())
-	      (args (if (or (list? rest) (pair? rest)) (cdr rest) '())))
+        (let ((reqs '())
+              (opts '())
+              (keys '())
+              (args (if (or (list? rest) (pair? rest)) (cdr rest) '())))
 
-	  (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
-	    (when (not (null? args))
-	      (cond
-	       ((or (pair? args) (list? args))
-		(cond
-		 ((eq? '#!key (car args))
-		  (collect-args (cdr args) reqs?: #f opts?: #f keys?: #t))
-		 ((eq? '#!optional (car args))
-		  (collect-args (cdr args) reqs?: #f opts?: #t keys?: #f))
-		 (else
-		  (begin
-		    (cond
-		     (reqs?
-		      (set! reqs (append reqs (list (car args)))))
-		     (opts?
-		      (set! opts (append opts (list (cons (caar args) (cdar args))))))
-		     (keys?
-		      (set! keys (append keys (list (cons (caar args) (cdar args)))))))
-		    (collect-args (cdr args))))))
-	       (else
-		(set! opts (list args '...))))))
+          (define (collect-args args #!key (reqs? #t) (opts? #f) (keys? #f))
+            (when (not (null? args))
+              (cond
+               ((or (pair? args) (list? args))
+                (cond
+                 ((eq? '#!key (car args))
+                  (collect-args (cdr args) reqs?: #f opts?: #f keys?: #t))
+                 ((eq? '#!optional (car args))
+                  (collect-args (cdr args) reqs?: #f opts?: #t keys?: #f))
+                 (else
+                  (begin
+                    (cond
+                     (reqs?
+                      (set! reqs (append reqs (list (car args)))))
+                     (opts?
+                      (set! opts (append opts (list (cons (caar args) (cdar args))))))
+                     (keys?
+                      (set! keys (append keys (list (cons (caar args) (cdar args)))))))
+                    (collect-args (cdr args))))))
+               (else
+                (set! opts (list args '...))))))
 
-	  (collect-args args)
+          (collect-args args)
 
-	  `(,sym ("args" (("required" ,@reqs)
-			  ("optional" ,@opts)
-			  ("key" ,@keys)))
-		 ,(if (and mod)
-		      (cons "module" mod)
-		      (list "module"))))))))
+          `(,sym ("args" (("required" ,@reqs)
+                          ("optional" ,@opts)
+                          ("key" ,@keys)))
+                 ,(if (and mod)
+                      (cons "module" mod)
+                      (list "module"))))))))
 
   ;; Builds a signature list from an identifier
   (define (find-signatures sym)
@@ -271,9 +271,9 @@
 
       (write `(port ,port))
       (newline)))
-
+  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Completions, Autodoc and Signature
+  ;; Completions, Autodoc and Signature
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (current-environment-completions prefix)
@@ -302,14 +302,14 @@
       (find-signatures ids))
      ((list? ids)
       (let ((first (find-signatures (car ids))))
-	(if first first (geiser-autodoc (cdr ids)))))
+        (if first first (geiser-autodoc (cdr ids)))))
      (else #f)))
   
   (define (geiser-object-signature name object . rest)
     (let* ((sig (geiser-autodoc `(,name))))
       (if (null? sig) '() (car sig))))
 
-    ;; TODO: Divine some way to support this functionality
+  ;; TODO: Divine some way to support this functionality
 
   (define (geiser-symbol-location symbol . rest)
     '(("file") ("line")))
@@ -328,13 +328,13 @@
   (define (geiser-find-file file . rest)
     (when file
       (let ((paths (geiser-chicken-load-paths)))
-	(define (try-find file paths)
-	  (cond
-	   ((null? paths) #f)
-	   ((file-exists? (string-append (car paths) file))
-	    (string-append (car paths) file))
-	   (else (try-find file (cdr paths)))))
-	(try-find file paths))))
+        (define (try-find file paths)
+          (cond
+           ((null? paths) #f)
+           ((file-exists? (string-append (car paths) file))
+            (string-append (car paths) file))
+           (else (try-find file (cdr paths)))))
+        (try-find file paths))))
 
   (define (geiser-add-to-load-path directory . rest)
     (let* ((directory (if (symbol? directory)
@@ -351,7 +351,7 @@
   (define (geiser-compile-file file . rest)
     #f)
 
-    ;; TODO: Support compiling regions
+  ;; TODO: Support compiling regions
 
   (define (geiser-compile form module . rest)
     (error "Chicken does not support compiling regions"))
@@ -385,5 +385,5 @@
       (lambda ()
         (write (expand form)))))
 
-;; End module
+  ;; End module
   )
