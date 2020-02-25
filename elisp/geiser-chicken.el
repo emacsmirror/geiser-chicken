@@ -125,11 +125,11 @@ This function uses `geiser-chicken-init-file' if it exists."
   (let ((init-file (and (stringp geiser-chicken-init-file)
                         (expand-file-name geiser-chicken-init-file)))
         (n-flags (and (not geiser-chicken-load-init-file-p) '("-n"))))
-  `(,@(and (listp geiser-chicken-binary) (cdr geiser-chicken-binary))
-    ,@n-flags "-include-path" ,(expand-file-name "chicken/" geiser-scheme-dir)
-    ,@(apply 'append (mapcar (lambda (p) (list "-include-path" p))
-                             geiser-chicken-load-path))
-    ,@(and init-file (file-readable-p init-file) (list init-file)))))
+    `(,@(and (listp geiser-chicken-binary) (cdr geiser-chicken-binary))
+      ,@n-flags "-include-path" ,(expand-file-name "chicken/" geiser-scheme-dir)
+      ,@(apply 'append (mapcar (lambda (p) (list "-include-path" p))
+                               geiser-chicken-load-path))
+      ,@(and init-file (file-readable-p init-file) (list init-file)))))
 
 (defconst geiser-chicken--prompt-regexp "#[^;]*;[^:0-9]*:?[0-9]+> ")
 
@@ -140,7 +140,7 @@ This function uses `geiser-chicken-init-file' if it exists."
   (case proc
     ((eval compile)
      (let ((form (mapconcat 'identity (cdr args) " "))
-	   (module (if (car args) (concat "'" (car args)) "#f")))
+           (module (if (car args) (concat "'" (car args)) "#f")))
        (format "(geiser-eval %s '%s)" module form)))
     ((load-file compile-file)
      (format "(geiser-load-file %s)" (car args)))
@@ -187,7 +187,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 (defun geiser-chicken--symbol-begin (module)
   (if module
       (max (save-excursion (beginning-of-line) (point))
-	   (save-excursion (skip-syntax-backward "^(>") (1- (point))))
+           (save-excursion (skip-syntax-backward "^(>") (1- (point))))
     (save-excursion (skip-syntax-backward "^'-()>") (point))))
 
 
