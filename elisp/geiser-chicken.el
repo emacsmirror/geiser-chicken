@@ -1,4 +1,4 @@
-;; geiser-chicken.el -- chicken's implementation of the geiser protocols
+;;; geiser-chicken.el -- chicken's implementation of the geiser protocols
 
 ;; Copyright (C) 2014, 2015, 2019 Daniel Leslie
 
