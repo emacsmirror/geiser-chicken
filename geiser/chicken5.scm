@@ -61,7 +61,7 @@
                   (name (cdar lst)))
              (append (list name module) (cdr lst))))
          (apropos-information-list partial-string #:macros? #t)))
-  
+
   (define debug-log (make-parameter #f))
   (define (write-to-log form)
     (when (geiser-chicken-use-debug-log)
@@ -78,7 +78,7 @@
      ((eq? (string-ref s 0) (string-ref prefix 0))
       (string-has-prefix? (substring s 1) (substring prefix 1)))
      (else #f)))
-  
+
   ;; This really should be a chicken library function
   (define (write-exception exn)
     (define (write-call-entry call)
@@ -140,7 +140,7 @@
         (write-to-log out-form))
 
       (newline)))
-  
+
   (define (eval* str)
     (cond
      ((string? str)
@@ -154,7 +154,7 @@
           (with-all-output-to-string (write-exception exn))
         (eval str)))
      (else (eval* (->string str)))))
-  
+
   (define (fmt node)
     (let* ((mod (cadr node))
            (sym (car node))
@@ -212,7 +212,7 @@
   (define (find-signatures sym)
     (let ((result (symbol-information-list sym)))
       (map fmt result)))
-  
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Geiser core functions
@@ -221,7 +221,7 @@
   (define (geiser-eval module form . rest)
     (when (and module (not (symbol? module)))
       (error "Module should be a symbol"))
-    
+
     ;; All calls start at toplevel
     (let* ((thunk (lambda () (eval form))))
       (write-to-log form)
@@ -294,7 +294,7 @@
 
   (define (geiser-module-completions prefix . rest)
     '())
-  
+
   (define (geiser-autodoc ids . rest)
     (cond
      ((null? ids) #f)
@@ -304,7 +304,7 @@
       (let ((first (find-signatures (car ids))))
         (if first first (geiser-autodoc (cdr ids)))))
      (else #f)))
-  
+
   (define (geiser-object-signature name object . rest)
     (let* ((sig (geiser-autodoc `(,name))))
       (if (null? sig) '() (car sig))))

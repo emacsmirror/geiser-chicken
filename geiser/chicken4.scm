@@ -50,7 +50,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Symbol lists
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
+
   (define geiser-r4rs-symbols
     (make-parameter
      '(not boolean? eq? eqv? equal? pair? cons car cdr caar cadr cdar cddr
@@ -229,7 +229,7 @@
                   (name (cdar lst)))
              (append (list name module) (cdr lst))))
          (apropos-information-list partial-string #:macros? #t)))
-  
+
   (define debug-log (make-parameter #f))
   (define (write-to-log form)
     (when (geiser-chicken-use-debug-log)
@@ -246,7 +246,7 @@
      ((eq? (string-ref s 0) (string-ref prefix 0))
       (string-has-prefix? (substring/shared s 1) (substring/shared prefix 1)))
      (else #f)))
-  
+
   ;; This really should be a chicken library function
   (define (write-exception exn)
     (define (write-call-entry call)
@@ -367,13 +367,13 @@
 
   (define (read* str)
     (with-input-from-string str (lambda () (read))))
-  
+
   (define (eval* str)
     (cond
      ((symbol? str) (eval str))
      ((string? str) (eval (read* str)))
      (else (eval* (->string str)))))
-  
+
   (define (fmt node)
     (let* ((mod (cadr node))
            (sym (car node))
@@ -454,7 +454,7 @@
                 (or (not filter-for-type)
                     (eq? (node-type n) filter-for-type)))
               (match-nodes symbol))))))
-  
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Geiser core functions
@@ -469,7 +469,7 @@
            geiser-symbol-documentation geiser-module-exports
            geiser-module-path geiser-module-location
            geiser-module-completions geiser-chicken-use-debug-log)))
-    
+
   (define (form-has-any-geiser? form)
     (string-has-prefix? (->string (car form)) "geiser-"))
 
@@ -487,7 +487,7 @@
   (define (geiser-eval module form . rest)
     (when (and module (not (symbol? module)))
       (error "Module should be a symbol"))
-    
+
     ;; All calls start at toplevel
     (let* ((is-safe-geiser? (form-has-safe-geiser? form))
            (host-module (and (not is-safe-geiser?)
@@ -572,7 +572,7 @@
         (if (null? details)
             (geiser-autodoc (cdr ids))
             details)))))
-  
+
   (define (geiser-object-signature name object . rest)
     (let* ((sig (geiser-autodoc `(,name))))
       (if (null? sig) '() (car sig))))
