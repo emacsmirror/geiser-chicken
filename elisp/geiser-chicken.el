@@ -26,7 +26,7 @@
 (require 'compile)
 (require 'info-look)
 
-(eval-when-compile (require 'cl))
+(eval-when-compile (require 'cl-lib))
 
 (defconst geiser-chicken-builtin-keywords
   '("assume"
@@ -137,7 +137,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 ;;; Evaluation support:
 
 (defun geiser-chicken--geiser-procedure (proc &rest args)
-  (case proc
+  (cl-case proc
     ((eval compile)
      (let ((form (mapconcat 'identity (cdr args) " "))
            (module (if (car args) (concat "'" (car args)) "#f")))
