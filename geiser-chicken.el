@@ -1,15 +1,23 @@
 ;;; geiser-chicken.el -- chicken's implementation of the geiser protocols
 
-;; Copyright (C) 2014, 2015, 2019 Daniel Leslie
+;; Copyright (C) 2014, 2015, 2019, 2020 Daniel Leslie
 
 ;; Based on geiser-guile.el by Jose Antonio Ortega Ruiz
 
-;; This program is free software; you can redistribute it and/or
-;; modify it under the terms of the Modified BSD License. You should
-;; have received a copy of the license along with this program. If
-;; not, see <http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5>.
+;; Author: Daniel Leslie
+;; Maintainer: Daniel Leslie
+;; Keywords: languages, chicken, scheme, geiser
+;; Homepage: https://gitlab.com/emacs-geiser/chicken
+;; Package-Requires: ((emacs "24.4") (geiser-core "1.0"))
+;; SPDX-License-Identifier: BSD-3-Clause
+;; Version: 1.0
 
-;; Start date: Sun Mar 08, 2009 23:03
+;; This file is NOT part of GNU Emacs.
+
+;;; Commentary:
+;; geiser-chicken extends the `geiser' core package to support
+;; Chicken.
+
 
 
 ;;; Code:
@@ -114,6 +122,10 @@ this variable to t."
 
 ;;; REPL support:
 
+(defvar geiser-chicken-scheme-dir
+  (expand-file-name "src" (file-name-nondirectory load-file-name))
+  "Directory where the Chicken scheme geiser modules are installed.")
+
 (defun geiser-chicken--binary ()
   (if (listp geiser-chicken-binary)
       (car geiser-chicken-binary)
@@ -126,7 +138,7 @@ This function uses `geiser-chicken-init-file' if it exists."
                         (expand-file-name geiser-chicken-init-file)))
         (n-flags (and (not geiser-chicken-load-init-file-p) '("-n"))))
     `(,@(and (listp geiser-chicken-binary) (cdr geiser-chicken-binary))
-      ,@n-flags "-include-path" ,(expand-file-name "chicken/" geiser-scheme-dir)
+      ,@n-flags "-include-path" ,geiser-chicken-scheme-dir
       ,@(apply 'append (mapcar (lambda (p) (list "-include-path" p))
                                geiser-chicken-load-path))
       ,@(and init-file (file-readable-p init-file) (list init-file)))))
@@ -279,9 +291,9 @@ This function uses `geiser-chicken-init-file' if it exists."
 
 (defun geiser-chicken4--compile-or-load (force-load)
   (let ((target
-         (expand-file-name "chicken/geiser/chicken4.so" geiser-scheme-dir))
+         (expand-file-name "geiser/chicken4.so" geiser-chicken-scheme-dir))
         (source
-         (expand-file-name "chicken/geiser/chicken4.scm" geiser-scheme-dir))
+         (expand-file-name "geiser/chicken4.scm" geiser-chicken-scheme-dir))
         (force-load (or force-load (eq system-type 'windows-nt)))
         (suppression-prefix
          "(define geiser-stdout (current-output-port))(current-output-port (make-output-port (lambda a #f) (lambda a #f)))")
@@ -300,8 +312,8 @@ This function uses `geiser-chicken-init-file' if it exists."
       (geiser-eval--send/wait load-sequence))))
 
 (defun geiser-chicken5-load ()
-  (let ((source (expand-file-name "chicken/geiser/chicken5.scm"
-                                  geiser-scheme-dir)))
+  (let ((source (expand-file-name "geiser/chicken5.scm"
+                                  geiser-chicken-scheme-dir)))
     (geiser-eval--send/wait
      (format
       "(display '((result . t) (output . f))) (load \"%s\")"
