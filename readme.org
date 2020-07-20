@@ -1,0 +1,46 @@
+* Chicken and Geiser talk to each other
+
+  Geiser is a generic Emacs/Scheme interaction mode, featuring an
+  enhanced REPL and a set of minor modes improving Emacs' basic scheme
+  major mode. This package add support for Chicken in Geiser.
+
+*** Installation
+
+    The easiest way is to use MELPA, and just type
+    =M-x package-install RET geiser-chicken= inside emacs.
+
+    Geiser-chicken can be used either directly from its uninstalled
+    source tree: just add it to your load path and require
+    ~geiser-chicken~ in your initialisation files.
+
+    You will also need to install some additional Chicken eggs,
+    depending on your Chicken version:
+
+***** Chicken 5 Addendum
+       These steps are necessary to fully support Chicken Scheme, but are
+       not required for any other scheme.
+
+       - Install the necessary support eggs:
+         #+BEGIN_EXAMPLE
+         $ chicken-install -s apropos chicken-doc srfi-18 srfi-1
+         #+END_EXAMPLE
+       - Update the Chicken documentation database:
+         #+BEGIN_EXAMPLE
+         $ cd `csi -R chicken.platform -p '(chicken-home)'`
+         $ curl https://3e8.org/pub/chicken-doc/chicken-doc-repo-5.tgz | sudo tar zx
+         #+END_EXAMPLE
+
+***** Chicken 4 Addendum
+       These steps are necessary to fully support Chicken Scheme, but are
+       not required for any other scheme.
+
+       - Install the necessary support eggs:
+         #+BEGIN_EXAMPLE
+          $ chicken-install -s apropos chicken-doc
+         #+END_EXAMPLE
+
+       - Update the Chicken documentation database:
+         #+BEGIN_EXAMPLE
+          $ cd `csi -p '(chicken-home)'`
+          $ curl http://3e8.org/pub/chicken-doc/chicken-doc-repo.tgz | sudo tar zx
+         #+END_EXAMPLE
