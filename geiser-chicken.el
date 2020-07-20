@@ -123,7 +123,7 @@ this variable to t."
 ;;; REPL support:
 
 (defvar geiser-chicken-scheme-dir
-  (expand-file-name "src" (file-name-nondirectory load-file-name))
+  (expand-file-name "src" (file-name-directory load-file-name))
   "Directory where the Chicken scheme geiser modules are installed.")
 
 (defun geiser-chicken--binary ()
