@@ -84,8 +84,7 @@
   :group 'geiser-chicken)
 
 (geiser-custom--defcustom geiser-chicken-load-path nil
-  "A list of paths to be added to Chicken's load path when it's
-started."
+  "A list of paths to be added to Chicken's load path when it's started."
   :type '(repeat file)
   :group 'geiser-chicken)
 
@@ -227,7 +226,8 @@ This function uses `geiser-chicken-init-file' if it exists."
   "Loads chicken doc into a buffer"
   (let* ((version (geiser-chicken--version (geiser-chicken--binary)))
 	 (major-version (car (split-string version "\\\."))))
-    (browse-url (format "http://api.call-cc.org/%s/cdoc?q=%s&query-name=Look+up" major-version id))))
+    (browse-url (format "http://api.call-cc.org/%s/cdoc?q=%s&query-name=Look+up"
+                        major-version id))))
 
 
 ;;; Keywords and syntax
