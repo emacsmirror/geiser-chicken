@@ -162,15 +162,19 @@ This function uses `geiser-chicken-init-file' if it exists."
        (format "(geiser#geiser-%s %s)" proc form)))))
 
 (defconst geiser-chicken--module-re
-  "( *module +\\(([^)]+)\\|[^ ]+\\)\\|( *define-library +\\(([^)]+)\\|[^ ]+\\)")
+  "( *module +\\(([^)]+)\\|[^ ]+\\)")
+
+(defconst geiser-chicken--define-library-re
+  "( *define-library +\\(([^)]+)\\)")
 
 (defun geiser-chicken--get-module (&optional module)
   (cond ((null module)
          (save-excursion
            (geiser-syntax--pop-to-top)
            (if (or (re-search-backward geiser-chicken--module-re nil t)
-                   (looking-at geiser-chicken--module-re)
-                   (re-search-forward geiser-chicken--module-re nil t))
+                   (re-search-backward geiser-chicken--define-library-re nil t)
+                   (re-search-forward geiser-chicken--module-re nil t)
+                   (re-search-forward geiser-chicken--define-library-re nil t))
                (geiser-chicken--get-module (match-string-no-properties 1))
              :f)))
         ((listp module) module)
