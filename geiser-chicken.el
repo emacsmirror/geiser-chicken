@@ -1,6 +1,6 @@
-;;; geiser-chicken.el -- chicken's implementation of the geiser protocols
+;;; geiser-chicken.el --- Chicken's implementation of the geiser protocols  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2014, 2015, 2019, 2020 Daniel Leslie
+;; Copyright (C) 2014, 2015, 2019, 2020, 2021 Daniel Leslie
 
 ;; Based on geiser-guile.el by Jose Antonio Ortega Ruiz
 
@@ -8,16 +8,16 @@
 ;; Maintainer: Daniel Leslie
 ;; Keywords: languages, chicken, scheme, geiser
 ;; Homepage: https://gitlab.com/emacs-geiser/chicken
-;; Package-Requires: ((emacs "24.4") (geiser-core "1.0"))
+;; Package-Requires: ((emacs "24.4") (geiser "0.12"))
 ;; SPDX-License-Identifier: BSD-3-Clause
 ;; Version: 1.0
 
 ;; This file is NOT part of GNU Emacs.
 
 ;;; Commentary:
-;; geiser-chicken extends the `geiser' core package to support
-;; Chicken.
 
+;;  This package extends the `geiser' core package to support
+;;  Chicken.
 
 
 ;;; Code:
@@ -126,6 +126,7 @@ this variable to t."
   "Directory where the Chicken scheme geiser modules are installed.")
 
 (defun geiser-chicken--binary ()
+  "Return path to chicken executable."
   (if (listp geiser-chicken-binary)
       (car geiser-chicken-binary)
     geiser-chicken-binary))
@@ -148,6 +149,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 ;;; Evaluation support:
 
 (defun geiser-chicken--geiser-procedure (proc &rest args)
+  "Transform PROC in string for a scheme procedure using ARGS."
   (cl-case proc
     ((eval compile)
      (let ((form (mapconcat 'identity (cdr args) " "))
@@ -168,6 +170,7 @@ This function uses `geiser-chicken-init-file' if it exists."
   "( *define-library +\\(([^)]+)\\)")
 
 (defun geiser-chicken--get-module (&optional module)
+  "Find current buffer's module using MODULE as a hint."
   (cond ((null module)
          (save-excursion
            (geiser-syntax--pop-to-top)
@@ -185,6 +188,7 @@ This function uses `geiser-chicken-init-file' if it exists."
         (t :f)))
 
 (defun geiser-chicken--module-cmd (module fmt &optional def)
+  "Use FMT to format a change to MODULE, with default DEF."
   (when module
     (let* ((module (geiser-chicken--get-module module))
            (module (cond ((or (null module) (eq module :f)) def)
@@ -192,14 +196,19 @@ This function uses `geiser-chicken-init-file' if it exists."
       (and module (format fmt module)))))
 
 (defun geiser-chicken--import-command (module)
+  "Format a sexp to use MODULE."
   (geiser-chicken--module-cmd module "(use %s)"))
 
 (defun geiser-chicken--enter-command (module)
+  "Format a REPL command to enter MODULE."
   (geiser-chicken--module-cmd module ",m %s" module))
 
-(defun geiser-chicken--exit-command () ",q")
+(defun geiser-chicken--exit-command ()
+  "Format a REPL command to quit."
+  ",q")
 
 (defun geiser-chicken--symbol-begin (module)
+  "Find beginning of symbol, in the context of MODULE."
   (if module
       (max (save-excursion (beginning-of-line) (point))
            (save-excursion (skip-syntax-backward "^(>") (1- (point))))
@@ -208,7 +217,8 @@ This function uses `geiser-chicken-init-file' if it exists."
 
 ;;; Error display
 
-(defun geiser-chicken--display-error (module key msg)
+(defun geiser-chicken--display-error (_module key msg)
+  "Display an error with key KEY and message MSG."
   (newline)
   (when (stringp msg)
     (save-excursion (insert msg))
@@ -222,12 +232,13 @@ This function uses `geiser-chicken-init-file' if it exists."
   (regexp-opt '("csi" "chicken" "csc")))
 
 (defun geiser-chicken--guess ()
+  "Try to detect whether we're in a Chicken scheme buffer."
   (save-excursion
     (goto-char (point-min))
     (re-search-forward geiser-chicken--guess-re nil t)))
 
-(defun geiser-chicken--external-help (id module)
-  "Loads chicken doc into a buffer"
+(defun geiser-chicken--external-help (id _module)
+  "Load chicken doc for ID into a buffer."
   (let* ((version (geiser-chicken--version (geiser-chicken--binary)))
 	 (major-version (car (split-string version "\\\."))))
     (browse-url (format "http://api.call-cc.org/%s/cdoc?q=%s&query-name=Look+up"
@@ -237,6 +248,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 ;;; Keywords and syntax
 
 (defun geiser-chicken--keywords ()
+  "Return Chicken-specific scheme keywords."
   (append
    (geiser-syntax--simple-keywords geiser-chicken-extra-keywords)
    (geiser-syntax--simple-keywords geiser-chicken-builtin-keywords)))
@@ -278,6 +290,7 @@ This function uses `geiser-chicken-init-file' if it exists."
 (defconst geiser-chicken-minimum-version "4.8.0.0")
 
 (defun geiser-chicken--version (binary)
+  "Find Chicken's version using  BINARY."
   (cl-destructuring-bind (program . args)
       (append (if (listp binary) binary (list binary))
               '("-e" "(display \
@@ -296,6 +309,7 @@ This function uses `geiser-chicken-init-file' if it exists."
   (geiser-connect 'chicken))
 
 (defun geiser-chicken4--compile-or-load (force-load)
+  "Compile or load Geiser support code in Chiken4, forcibly if FORCE-LOAD is t."
   (let ((target
          (expand-file-name "geiser/chicken4.so" geiser-chicken-scheme-dir))
         (source
@@ -318,6 +332,7 @@ This function uses `geiser-chicken-init-file' if it exists."
       (geiser-eval--send/wait load-sequence))))
 
 (defun geiser-chicken5-load ()
+  "Load Geiser support code in Chicken 5."
   (let ((source (expand-file-name "geiser/chicken5.scm"
                                   geiser-chicken-scheme-dir)))
     (geiser-eval--send/wait
@@ -325,7 +340,8 @@ This function uses `geiser-chicken-init-file' if it exists."
       "(display '((result . t) (output . f))) (load \"%s\")"
       source))))
 
-(defun geiser-chicken--startup (remote)
+(defun geiser-chicken--startup (_remote)
+  "Startup function."
   (compilation-setup t)
   (cond
    ((version< (geiser-chicken--version geiser-chicken-binary) "5.0.0")
@@ -363,3 +379,4 @@ This function uses `geiser-chicken-init-file' if it exists."
 (geiser-impl--add-to-alist 'regexp "\\.setup$" 'chicken t)
 
 (provide 'geiser-chicken)
+;;; geiser-chicken.el ends here
