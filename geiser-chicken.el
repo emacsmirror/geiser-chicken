@@ -378,5 +378,16 @@ This function uses `geiser-chicken-init-file' if it exists."
 (geiser-impl--add-to-alist 'regexp "\\.meta$" 'chicken t)
 (geiser-impl--add-to-alist 'regexp "\\.setup$" 'chicken t)
 
+;;;###autoload
+(autoload 'run-chicken "geiser-chicken" "Start a Geiser Chicken REPL." t)
+
+;;;###autoload
+(autoload 'switch-to-chicken "geiser-chicken"
+  "Start a Geiser Chicken REPL, or switch to a running one." t)
+
+;;;###autoload
+(autoload 'connect-to-chicken "geiser-chicken"
+  "Connect to a remote Geiser Chicken REPL." t)
+
 (provide 'geiser-chicken)
 ;;; geiser-chicken.el ends here
