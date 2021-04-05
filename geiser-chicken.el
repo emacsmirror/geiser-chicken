@@ -22,6 +22,7 @@
 
 ;;; Code:
 
+(require 'geiser-impl)
 (require 'geiser-connection)
 (require 'geiser-syntax)
 (require 'geiser-custom)
@@ -373,9 +374,16 @@ This function uses `geiser-chicken-init-file' if it exists."
   (keywords geiser-chicken--keywords)
   (case-sensitive geiser-chicken-case-sensitive-p))
 
+;;;###autoload
+(geiser-activate-implementation 'chicken)
+
 (geiser-impl--add-to-alist 'regexp "\\.scm$" 'chicken t)
+
+;;;###autoload
 (geiser-impl--add-to-alist 'regexp "\\.release-info$" 'chicken t)
+;;;###autoload
 (geiser-impl--add-to-alist 'regexp "\\.meta$" 'chicken t)
+;;;###autoload
 (geiser-impl--add-to-alist 'regexp "\\.setup$" 'chicken t)
 
 ;;;###autoload
