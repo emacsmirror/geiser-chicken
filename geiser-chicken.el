@@ -8,9 +8,9 @@
 ;; Maintainer: Daniel Leslie
 ;; Keywords: languages, chicken, scheme, geiser
 ;; Homepage: https://gitlab.com/emacs-geiser/chicken
-;; Package-Requires: ((emacs "24.4") (geiser "0.12"))
+;; Package-Requires: ((emacs "24.4") (geiser "0.16"))
 ;; SPDX-License-Identifier: BSD-3-Clause
-;; Version: 0.13
+;; Version: 0.16
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -377,14 +377,14 @@ This function uses `geiser-chicken-init-file' if it exists."
 ;;;###autoload
 (geiser-activate-implementation 'chicken)
 
-(geiser-impl--add-to-alist 'regexp "\\.scm$" 'chicken t)
+(geiser-implementation-extension 'chicken "scm")
 
 ;;;###autoload
-(geiser-impl--add-to-alist 'regexp "\\.release-info$" 'chicken t)
+(geiser-implementation-extension 'chicken "release-info")
 ;;;###autoload
-(geiser-impl--add-to-alist 'regexp "\\.meta$" 'chicken t)
+(geiser-implementation-extension 'chicken "meta")
 ;;;###autoload
-(geiser-impl--add-to-alist 'regexp "\\.setup$" 'chicken t)
+(geiser-implementation-extension 'chicken "setup")
 
 ;;;###autoload
 (autoload 'run-chicken "geiser-chicken" "Start a Geiser Chicken REPL." t)
