@@ -377,8 +377,6 @@ This function uses `geiser-chicken-init-file' if it exists."
 ;;;###autoload
 (geiser-activate-implementation 'chicken)
 
-(geiser-implementation-extension 'chicken "scm")
-
 ;;;###autoload
 (geiser-implementation-extension 'chicken "release-info")
 ;;;###autoload
