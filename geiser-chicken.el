@@ -8,9 +8,9 @@
 ;; Maintainer: Daniel Leslie
 ;; Keywords: languages, chicken, scheme, geiser
 ;; Homepage: https://gitlab.com/emacs-geiser/chicken
-;; Package-Requires: ((emacs "24.4") (geiser "0.16"))
+;; Package-Requires: ((emacs "24.4") (geiser "0.19"))
 ;; SPDX-License-Identifier: BSD-3-Clause
-;; Version: 0.16
+;; Version: 0.17
 
 ;; This file is NOT part of GNU Emacs.
 
