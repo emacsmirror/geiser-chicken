@@ -145,13 +145,13 @@
     (cond
      ((string? str)
       (handle-exceptions exn
-          (with-all-output-to-string (write-exception exn))
+          (with-all-output-to-string (lambda () (write-exception exn)))
         (eval
          (with-input-from-string str
            (lambda () (read))))))
      ((symbol? str)
       (handle-exceptions exn
-          (with-all-output-to-string (write-exception exn))
+          (with-all-output-to-string (lambda () (write-exception exn)))
         (eval str)))
      (else (eval* (->string str)))))
 
