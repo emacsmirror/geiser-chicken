@@ -334,12 +334,18 @@ This function uses `geiser-chicken-init-file' if it exists."
 
 (defun geiser-chicken5-load ()
   "Load Geiser support code in Chicken 5."
-  (let ((source (expand-file-name "geiser/chicken5.scm"
-                                  geiser-chicken-scheme-dir)))
+  (let* ((source (expand-file-name "geiser/chicken5.scm"
+                                   geiser-chicken-scheme-dir))
+         (contents (with-current-buffer
+                       (get-buffer-create " *geiser-chicken5-load*" t)
+                     (insert-file-contents-literally source)
+                     (prog1
+                         (buffer-string)
+                       (kill-buffer " *geiser-chicken5-load*")))))
     (geiser-eval--send/wait
      (format
-      "(display '((result . t) (output . f))) (load \"%s\")"
-      source))))
+      "(display '((result . t) (output . f))) %s"
+      contents))))
 
 (defun geiser-chicken--startup (_remote)
   "Startup function."
