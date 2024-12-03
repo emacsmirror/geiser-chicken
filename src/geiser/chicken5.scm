@@ -281,7 +281,8 @@
   (define (current-environment-completions prefix)
     (let ((size (string-length prefix)))
       (filter
-       (lambda (candidate) (substring=? prefix candidate 0 0 size))
+       (lambda (candidate) (and (< size (string-length candidate))
+                           (substring=? prefix candidate 0 0 size)))
        (map (o symbol->string car) (##sys#current-environment)))))
 
   (define (apropos-completions prefix)
