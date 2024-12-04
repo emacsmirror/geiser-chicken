@@ -35,6 +35,7 @@
     apropos
     srfi-1
     srfi-18
+    chicken-doc
     (chicken base)
     (chicken tcp)
     (chicken file)
@@ -317,10 +318,19 @@
   (define (geiser-symbol-location symbol . rest)
     '(("file") ("line")))
 
+  (define (geiser-symbol-chicken-doc symbol)
+    (with-output-to-string
+      (lambda ()
+        (map (lambda (x)
+               (describe-signatures (list x))
+               (describe x))
+             (match-nodes symbol)))))
+
   (define (geiser-symbol-documentation symbol . rest)
-    (let* ((sig (find-signatures symbol)))
+    (let* ((sig (find-signatures symbol))
+           (docstring (geiser-symbol-chicken-doc symbol)))
       `(("signature" ,@(car sig))
-        ("docstring" . ""))))
+        ("docstring" . ,docstring))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; File and Buffer Operations
