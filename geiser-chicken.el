@@ -79,6 +79,7 @@
 (geiser-custom--defcustom geiser-chicken-binary
   (cond ((eq system-type 'windows-nt) '("csi.exe" "-:c"))
         ((eq system-type 'darwin) "csi")
+        ((executable-find "chicken-csi") "chicken-csi")
         (t "csi"))
   "Name to use to call the Chicken executable when starting a REPL."
   :type '(choice string (repeat string))
